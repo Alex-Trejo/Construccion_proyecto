@@ -12,8 +12,9 @@ dist/
 out/
 build/
 
-# ─── Turborepo ──────────────────────────────────────────────────────────────
+# ─── Turborepo / TypeScript incremental ──────────────────────────────────────
 .turbo/
+*.tsbuildinfo
 
 # ─── Variables de entorno (NUNCA commitear) ─────────────────────────────────
 .env

@@ -4,6 +4,7 @@
 **/.next
 **/.turbo
 **/coverage
+**/*.tsbuildinfo
 
 # Secretos y entorno local (NUNCA dentro de la imagen)
 .env
