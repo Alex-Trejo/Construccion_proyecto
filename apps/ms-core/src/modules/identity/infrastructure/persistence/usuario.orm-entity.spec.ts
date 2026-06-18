@@ -9,7 +9,6 @@ describe('UsuarioOrmEntity', () => {
     user.estado = true;
     user.idPersona = 'uuid-persona';
     user.idRol = 'uuid-rol';
-    user.passwordHash = 'hash';
 
     expect(user).toBeDefined();
     expect(user.id).toBe('uuid-1');

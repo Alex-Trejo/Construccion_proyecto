@@ -38,9 +38,6 @@ export class UsuarioOrmEntity {
   @Column({ name: 'username', type: 'varchar', length: 150 })
   username!: string;
 
-  @Column({ name: 'password_hash', type: 'varchar', length: 255, nullable: true })
-  passwordHash!: string | null;
-
   @Column({ name: 'id_persona', type: 'uuid' })
   idPersona!: string;
 
