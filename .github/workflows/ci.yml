@@ -52,48 +52,32 @@ jobs:
         run: pnpm test
         continue-on-error: true
 
-  # ── Análisis de calidad — SonarQube en contenedor de servicio ────────────
+  # ── Análisis de calidad — SonarQube / SonarCloud (externo) ───────────────
+  # Se ejecuta contra un Sonar EXTERNO (SonarCloud o tu servidor SonarQube)
+  # configurado por secrets. Si no hay SONAR_TOKEN, el análisis se OMITE
+  # limpiamente (check en verde) en vez de fallar.
   quality:
     name: SonarQube
     runs-on: ubuntu-latest
-    continue-on-error: true # no bloquea el pipeline
-    services:
-      sonarqube:
-        image: sonarqube:community
-        ports:
-          - 9000:9000
+    needs: build-test
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # SonarCloud: https://sonarcloud.io | SonarQube propio: https://tu-sonar
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Sonar necesita el historial para blame
 
-      - name: Esperar a que SonarQube esté UP
-        run: |
-          for i in $(seq 1 40); do
-            s=$(curl -s http://localhost:9000/api/system/status || true)
-            echo "Intento $i: $s"
-            echo "$s" | grep -q '"status":"UP"' && exit 0
-            sleep 5
-          done
-          echo "SonarQube no llegó a UP a tiempo"; exit 1
-
-      - name: Generar token de análisis
-        id: sonar
-        run: |
-          # Cambiar password por defecto (requisito de SonarQube; best-effort)
-          curl -s -u admin:admin -X POST "http://localhost:9000/api/users/change_password" \
-            -d "login=admin" -d "previousPassword=admin" -d "password=Admin12345!" || true
-          TOKEN=$(curl -s -u admin:Admin12345! -X POST \
-            "http://localhost:9000/api/user_tokens/generate?name=ci-${GITHUB_RUN_ID}" \
-            | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
-          echo "::add-mask::$TOKEN"
-          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
-
-      - name: Ejecutar análisis Sonar
+      - name: Análisis Sonar
+        if: ${{ env.SONAR_TOKEN != '' }}
         uses: sonarsource/sonarqube-scan-action@v3
-        env:
-          SONAR_HOST_URL: http://localhost:9000
-          SONAR_TOKEN: ${{ steps.sonar.outputs.token }}
+        # SONAR_TOKEN y SONAR_HOST_URL ya están en el env del job.
+
+      - name: Sonar omitido (sin SONAR_TOKEN)
+        if: ${{ env.SONAR_TOKEN == '' }}
+        run: |
+          echo "::notice::Análisis Sonar omitido: configura SONAR_TOKEN (y SONAR_HOST_URL si usas SonarQube propio) en los Secrets para habilitarlo."
 
   # ── Escaneo de seguridad — Trivy (filesystem) ────────────────────────────
   security:
