@@ -72,7 +72,7 @@ export function useApi() {
 
       return response.json() as Promise<T>;
     },
-    [session?.accessToken],
+    [session],
   );
 
   const apiGet = useCallback(
