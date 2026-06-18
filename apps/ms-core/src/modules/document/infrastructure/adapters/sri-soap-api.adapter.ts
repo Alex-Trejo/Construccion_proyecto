@@ -151,18 +151,24 @@ export class SriSoapApiAdapter implements SriSoapApiPort {
   /** Extrae los mensajes de la respuesta del SRI. */
   private extractMessages(xml: string): ReadonlyArray<SriMessage> {
     const messages: SriMessage[] = [];
-    const messageRegex = /<mensaje>([\s\S]*?)<\/mensaje>/g;
-    let match = messageRegex.exec(xml);
+    
+    // Extraer todo el bloque <mensajes>
+    const mensajesBlockMatch = xml.match(/<mensajes>([\s\S]*?)<\/mensajes>/);
+    if (!mensajesBlockMatch) return [];
 
-    while (match !== null) {
-      const msgXml = match[1];
+    const mensajesBlock = mensajesBlockMatch[1];
+    
+    // Separar por <identificador> para evitar el problema de <mensaje> anidado
+    const partes = mensajesBlock.split('<identificador>');
+
+    for (let i = 1; i < partes.length; i++) {
+      const parte = '<identificador>' + partes[i];
       messages.push({
-        identificador: this.extractTag(msgXml, 'identificador'),
-        mensaje: this.extractTag(msgXml, 'mensaje'),
-        informacionAdicional: this.extractTag(msgXml, 'informacionAdicional'),
-        tipo: this.extractTag(msgXml, 'tipo'),
+        identificador: this.extractTag(parte, 'identificador'),
+        mensaje: this.extractTag(parte, 'mensaje'),
+        informacionAdicional: this.extractTag(parte, 'informacionAdicional'),
+        tipo: this.extractTag(parte, 'tipo'),
       });
-      match = messageRegex.exec(xml);
     }
 
     return messages;
