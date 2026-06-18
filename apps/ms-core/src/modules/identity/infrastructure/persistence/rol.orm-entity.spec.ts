@@ -3,13 +3,13 @@ import { RolOrmEntity } from './rol.orm-entity';
 describe('RolOrmEntity', () => {
   it('should be defined', () => {
     const rol = new RolOrmEntity();
-    rol.id = 1;
-    rol.nombre = 'Admin';
+    rol.id = 'uuid-1';
+    rol.nombreRol = 'Admin';
     rol.descripcion = 'Administrator';
-    rol.estado = true;
+    rol.isActive = true;
 
     expect(rol).toBeDefined();
-    expect(rol.id).toBe(1);
-    expect(rol.nombre).toBe('Admin');
+    expect(rol.id).toBe('uuid-1');
+    expect(rol.nombreRol).toBe('Admin');
   });
 });

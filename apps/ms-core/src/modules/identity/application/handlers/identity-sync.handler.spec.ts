@@ -67,14 +67,14 @@ describe('IdentitySyncHandler', () => {
 
   it('should sync a new user and persona successfully', async () => {
     personaRepoMock.findOne.mockResolvedValue(null);
-    personaRepoMock.create.mockReturnValue({ id: 1, ...basePayload });
-    personaRepoMock.save.mockResolvedValue({ id: 1, ...basePayload });
+    personaRepoMock.create.mockReturnValue({ id: 'uuid-1', ...basePayload });
+    personaRepoMock.save.mockResolvedValue({ id: 'uuid-1', ...basePayload });
 
-    rolRepoMock.findOne.mockResolvedValue({ id: 10, nombreRol: 'Administrador' });
+    rolRepoMock.findOne.mockResolvedValue({ id: 'uuid-10', nombreRol: 'Administrador' });
 
     usuarioRepoMock.findOne.mockResolvedValue(null);
-    usuarioRepoMock.create.mockReturnValue({ id: 100 });
-    usuarioRepoMock.save.mockResolvedValue({ id: 100 });
+    usuarioRepoMock.create.mockReturnValue({ id: 'uuid-100' });
+    usuarioRepoMock.save.mockResolvedValue({ id: 'uuid-100' });
 
     const result = await handler.syncUser(basePayload);
 
@@ -84,13 +84,13 @@ describe('IdentitySyncHandler', () => {
   });
 
   it('should update existing persona and user', async () => {
-    const existingPersona = { id: 1, nombres: 'Old', apellidos: 'Old' };
-    const existingUser = { id: 100, ultimoAcceso: new Date('2020-01-01') };
+    const existingPersona = { id: 'uuid-1', nombres: 'Old', apellidos: 'Old' };
+    const existingUser = { id: 'uuid-100', ultimoAcceso: new Date('2020-01-01') };
 
     personaRepoMock.findOne.mockResolvedValue(existingPersona);
     personaRepoMock.save.mockResolvedValue(existingPersona);
 
-    rolRepoMock.findOne.mockResolvedValue({ id: 10, nombreRol: 'Administrador' });
+    rolRepoMock.findOne.mockResolvedValue({ id: 'uuid-10', nombreRol: 'Administrador' });
 
     usuarioRepoMock.findOne.mockResolvedValue(existingUser);
     usuarioRepoMock.save.mockResolvedValue(existingUser);
@@ -105,8 +105,8 @@ describe('IdentitySyncHandler', () => {
   });
 
   it('should fail if role is not found', async () => {
-    personaRepoMock.findOne.mockResolvedValue({ id: 1 });
-    personaRepoMock.save.mockResolvedValue({ id: 1 });
+    personaRepoMock.findOne.mockResolvedValue({ id: 'uuid-1' });
+    personaRepoMock.save.mockResolvedValue({ id: 'uuid-1' });
 
     rolRepoMock.findOne.mockResolvedValue(null);
 

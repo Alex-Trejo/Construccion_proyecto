@@ -19,8 +19,8 @@ import {
 
 @Entity('roles')
 export class RolOrmEntity {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Index('idx_roles_nombre', { unique: true })
   @Column({ name: 'nombre_rol', type: 'varchar', length: 100, unique: true })

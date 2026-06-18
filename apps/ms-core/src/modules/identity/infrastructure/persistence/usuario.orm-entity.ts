@@ -28,8 +28,8 @@ import { RolOrmEntity } from './rol.orm-entity';
 
 @Entity('usuarios')
 export class UsuarioOrmEntity {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Index('idx_usuarios_keycloak_id', { unique: true })
   @Column({ name: 'keycloak_id', type: 'varchar', length: 255, unique: true })
@@ -38,11 +38,14 @@ export class UsuarioOrmEntity {
   @Column({ name: 'username', type: 'varchar', length: 150 })
   username!: string;
 
-  @Column({ name: 'id_persona', type: 'integer' })
-  idPersona!: number;
+  @Column({ name: 'password_hash', type: 'varchar', length: 255, nullable: true })
+  passwordHash!: string | null;
 
-  @Column({ name: 'id_rol', type: 'integer' })
-  idRol!: number;
+  @Column({ name: 'id_persona', type: 'uuid' })
+  idPersona!: string;
+
+  @Column({ name: 'id_rol', type: 'uuid' })
+  idRol!: string;
 
   @Column({ name: 'estado', type: 'boolean', default: true })
   estado!: boolean;

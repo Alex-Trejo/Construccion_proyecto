@@ -21,8 +21,8 @@ import {
 
 @Entity('personas')
 export class PersonaOrmEntity {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Index('idx_personas_cedula', { unique: true })
   @Column({ name: 'cedula', type: 'varchar', length: 13, unique: true, nullable: true })
