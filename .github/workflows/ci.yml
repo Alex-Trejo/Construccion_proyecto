@@ -81,14 +81,10 @@ jobs:
           path: .
 
       - name: Análisis Sonar
-        if: ${{ env.SONAR_TOKEN != '' }}
         uses: sonarsource/sonarqube-scan-action@v3
-        # SONAR_TOKEN y SONAR_HOST_URL ya están en el env del job.
-
-      - name: Sonar omitido (sin SONAR_TOKEN)
-        if: ${{ env.SONAR_TOKEN == '' }}
-        run: |
-          echo "::notice::Análisis Sonar omitido: configura SONAR_TOKEN (y SONAR_HOST_URL si usas SonarQube propio) en los Secrets para habilitarlo."
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
   # ── Escaneo de seguridad — Trivy (filesystem) ────────────────────────────
   security:
