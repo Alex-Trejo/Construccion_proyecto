@@ -38,8 +38,9 @@ export function createAppLogger(appName: string) {
         json: true,
         format: winston.format.json(),
         replaceTimestamp: true,
-        batching: true,
-        interval: 5,
+        // Sin batching: cada log se envía de inmediato (más fiable que el
+        // batch en memoria, que puede perderse o no vaciarse a tiempo).
+        batching: false,
         onConnectionError: (err: unknown) =>
           // eslint-disable-next-line no-console
           console.error(`[loki] error de conexión (${appName}):`, err),

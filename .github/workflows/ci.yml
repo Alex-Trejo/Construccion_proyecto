@@ -44,13 +44,11 @@ jobs:
       - name: Compilar (turbo build)
         run: pnpm build
 
-      - name: Lint (no bloqueante)
+      - name: Lint
         run: pnpm lint
-        continue-on-error: true
 
-      - name: Tests (no bloqueante)
+      - name: Tests
         run: pnpm test
-        continue-on-error: true
 
   # ── Análisis de calidad — SonarQube / SonarCloud (externo) ───────────────
   # Se ejecuta contra un Sonar EXTERNO (SonarCloud o tu servidor SonarQube)
