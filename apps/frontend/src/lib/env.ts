@@ -1,8 +1,10 @@
 /**
- * @fileoverview Configuración de Fail-Fast para variables de entorno del frontend.
+ * @fileoverview Validación de variables de entorno del frontend.
  *
- * Valida en tiempo de build que TODAS las variables de entorno requeridas
- * estén presentes. Si alguna falta, Next.js crashea inmediatamente.
+ * A diferencia del backend (Fail-Fast estricto con Joi), aquí se ADVIERTE
+ * en vez de crashear: el frontend (incluida la landing pública) debe poder
+ * levantar siempre. Si faltan variables de Keycloak/NextAuth, solo la
+ * autenticación dejará de funcionar — con un mensaje claro en logs.
  *
  * @module env
  */
@@ -17,26 +19,23 @@ function getServerEnv() {
     'KEYCLOAK_ISSUER',
   ] as const;
 
-  const missing: string[] = [];
-
-  for (const varName of requiredServerVars) {
-    if (!process.env[varName]) {
-      missing.push(varName);
-    }
-  }
+  const missing = requiredServerVars.filter((v) => !process.env[v]);
 
   if (missing.length > 0) {
-    throw new Error(
-      `❌ [Fail-Fast] Variables de entorno faltantes:\n${missing.map((v) => `  - ${v}`).join('\n')}`,
+    console.warn(
+      `⚠️ [SGC] Variables de entorno del servidor faltantes — la autenticación ` +
+        `con Keycloak NO funcionará hasta configurarlas:\n${missing
+          .map((v) => `  - ${v}`)
+          .join('\n')}`,
     );
   }
 
   return {
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL as string,
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET as string,
-    KEYCLOAK_CLIENT_ID: process.env.KEYCLOAK_CLIENT_ID as string,
-    KEYCLOAK_CLIENT_SECRET: process.env.KEYCLOAK_CLIENT_SECRET as string,
-    KEYCLOAK_ISSUER: process.env.KEYCLOAK_ISSUER as string,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL ?? '',
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ?? '',
+    KEYCLOAK_CLIENT_ID: process.env.KEYCLOAK_CLIENT_ID ?? '',
+    KEYCLOAK_CLIENT_SECRET: process.env.KEYCLOAK_CLIENT_SECRET ?? '',
+    KEYCLOAK_ISSUER: process.env.KEYCLOAK_ISSUER ?? '',
   };
 }
 
@@ -45,13 +44,15 @@ function getClientEnv() {
   const apiGatewayUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
 
   if (!apiGatewayUrl) {
-    throw new Error(
-      '❌ [Fail-Fast] Variable de entorno faltante: NEXT_PUBLIC_API_GATEWAY_URL',
+    console.warn(
+      '⚠️ [SGC] Falta NEXT_PUBLIC_API_GATEWAY_URL — las llamadas al API Gateway ' +
+        'usarán la URL por defecto.',
     );
   }
 
   return {
-    NEXT_PUBLIC_API_GATEWAY_URL: apiGatewayUrl,
+    NEXT_PUBLIC_API_GATEWAY_URL:
+      apiGatewayUrl ?? 'http://localhost:3000/api/v1',
   };
 }
 
