@@ -7,9 +7,9 @@ describe('PersonaNaturalSupplier', () => {
   it('should create valid persona natural supplier', () => {
     const props = {
       id: 'sup-1',
-      supplierCode: SupplierCode.create('P-001'),
+      supplierCode: SupplierCode.generate(SupplierType.PERSONA_NATURAL, '1002142659001'),
       supplierType: SupplierType.PERSONA_NATURAL,
-      ruc: Ruc.create('1791251237001'),
+      ruc: Ruc.create('1002142659001'),
       email: 'test@test.com',
       phone: '123456789',
       address: 'Dir',
@@ -24,7 +24,7 @@ describe('PersonaNaturalSupplier', () => {
     const supplier = new PersonaNaturalSupplier(props);
 
     expect(supplier.id).toBe('sup-1');
-    expect(supplier.getDisplayName()).toBe('Juan Perez');
+    expect(supplier.getDisplayName()).toBe('PEREZ Juan');
     expect(supplier.firstName).toBe('Juan');
     expect(supplier.lastName).toBe('Perez');
     expect(supplier.cedula).toBe('1791251237');

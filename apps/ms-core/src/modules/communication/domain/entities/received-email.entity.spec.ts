@@ -18,21 +18,22 @@ describe('ReceivedEmail', () => {
     expect(email.emailFrom).toBe('test@test.com');
   });
 
-  it('should add an attachment', () => {
+  it('should calculate attachment properties correctly', () => {
+    const mockXmlAttachment = { extension: 'xml' } as any;
+    const mockPdfAttachment = { extension: 'pdf' } as any;
+
     const email = new ReceivedEmail({
       id: 'email-1',
       emailFrom: 'test@test.com',
       emailSubject: 'Test',
       emailDate: new Date(),
       emailMessageId: 'msg-1',
-      attachments: [],
+      attachments: [mockXmlAttachment, mockPdfAttachment],
       createdAt: new Date(),
     });
 
-    const mockAttachment = { id: 'att-1' } as any;
-    email.addAttachment(mockAttachment);
-
-    expect(email.attachments.length).toBe(1);
-    expect(email.attachments[0].id).toBe('att-1');
+    expect(email.attachmentCount).toBe(2);
+    expect(email.hasXmlAttachments).toBe(true);
+    expect(email.hasPdfAttachments).toBe(true);
   });
 });

@@ -7,9 +7,9 @@ describe('PersonaJuridicaSupplier', () => {
   it('should create valid persona juridica supplier', () => {
     const props = {
       id: 'sup-1',
-      supplierCode: SupplierCode.create('P-001'),
+      supplierCode: SupplierCode.generate(SupplierType.PERSONA_JURIDICA, '1002142659001'),
       supplierType: SupplierType.PERSONA_JURIDICA,
-      ruc: Ruc.create('1791251237001'),
+      ruc: Ruc.create('1002142659001'),
       email: 'test@test.com',
       phone: '123456789',
       address: 'Dir',

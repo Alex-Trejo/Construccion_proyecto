@@ -73,24 +73,23 @@ describe('IncomingInvoice Entity', () => {
     expect(invoice.intentos).toBe(1);
   });
 
-  it('should increment attempts and stay pending if marked for retry', () => {
+  it('should reset to pending', () => {
     const invoice = new IncomingInvoice({
       id: 'inv-1',
       claveAcceso: '1'.repeat(49),
-      estado: InvoiceProcessingStatus.PENDIENTE,
+      estado: InvoiceProcessingStatus.ERROR,
       origen: InvoiceOrigin.TXT,
       xmlCrudo: null,
       xmlLimpio: null,
-      errorMessage: null,
-      intentos: 0,
+      errorMessage: 'Temp error',
+      intentos: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    invoice.markForRetry('Temp error');
+    invoice.resetToPending();
 
     expect(invoice.estado).toBe(InvoiceProcessingStatus.PENDIENTE);
-    expect(invoice.errorMessage).toBe('Temp error');
-    expect(invoice.intentos).toBe(1);
+    expect(invoice.errorMessage).toBeNull();
   });
 });

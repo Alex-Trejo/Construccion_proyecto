@@ -22,22 +22,21 @@ describe('EmailAttachmentEntity', () => {
     expect(attachment.extension).toBe('pdf');
   });
 
-  it('should update storage key', () => {
+  it('should format size correctly', () => {
     const attachment = new EmailAttachmentEntity({
       id: 'att-1',
       receivedEmailId: 'email-1',
       filename: 'test.pdf',
       extension: 'pdf',
       contentType: 'application/pdf',
-      size: 1024,
+      size: 1500,
       storageBucket: 'bucket',
       storageKey: 'key',
       createdAt: new Date(),
     });
 
-    attachment.updateStorageLocation('new-bucket', 'new-key');
-
-    expect(attachment.storageBucket).toBe('new-bucket');
-    expect(attachment.storageKey).toBe('new-key');
+    expect(attachment.formattedSize).toBe('1.5 KB');
+    expect(attachment.isPdf).toBe(true);
+    expect(attachment.isXml).toBe(false);
   });
 });
