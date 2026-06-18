@@ -48,7 +48,14 @@ jobs:
         run: pnpm lint
 
       - name: Tests
-        run: pnpm test
+        run: pnpm test:cov
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: apps/*/coverage/lcov.info
+          retention-days: 1
 
   # ── Análisis de calidad — SonarQube / SonarCloud (externo) ───────────────
   # Se ejecuta contra un Sonar EXTERNO (SonarCloud o tu servidor SonarQube)
@@ -66,6 +73,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Sonar necesita el historial para blame
+
+      - name: Download coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-reports
+          path: .
 
       - name: Análisis Sonar
         if: ${{ env.SONAR_TOKEN != '' }}
