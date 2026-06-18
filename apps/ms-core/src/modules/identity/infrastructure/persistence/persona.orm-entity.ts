@@ -34,7 +34,8 @@ export class PersonaOrmEntity {
   @Column({ name: 'apellidos', type: 'varchar', length: 200 })
   apellidos!: string;
 
-  @Column({ name: 'email', type: 'varchar', length: 255, nullable: true })
+  @Index('idx_personas_email', { unique: true })
+  @Column({ name: 'email', type: 'varchar', length: 255, nullable: true, unique: true })
   email!: string | null;
 
   @Column({ name: 'telefono', type: 'varchar', length: 50, nullable: true })

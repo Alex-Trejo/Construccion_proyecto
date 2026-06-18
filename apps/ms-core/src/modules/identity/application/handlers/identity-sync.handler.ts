@@ -57,14 +57,22 @@ export class IdentitySyncHandler {
       });
 
       if (!persona) {
-        persona = this.personaRepo.create({
-          cedula: null, // Se llenará cuando el admin lo configure en Keycloak
-          nombres: payload.firstName || payload.username,
-          apellidos: payload.lastName || '',
-          email: payload.email,
-        });
-        persona = await this.personaRepo.save(persona);
-        this.logger.log(`👤 Persona creada: ${persona.nombres} ${persona.apellidos}`);
+        try {
+          persona = this.personaRepo.create({
+            cedula: null, // Se llenará cuando el admin lo configure en Keycloak
+            nombres: payload.firstName || payload.username,
+            apellidos: payload.lastName || '',
+            email: payload.email,
+          });
+          persona = await this.personaRepo.save(persona);
+          this.logger.log(`👤 Persona creada: ${persona.nombres} ${persona.apellidos}`);
+        } catch (error: any) {
+          if (error.code === '23505') { // Postgres Unique Constraint Violation
+            persona = await this.personaRepo.findOneOrFail({ where: { email: payload.email } });
+          } else {
+            throw error;
+          }
+        }
       } else {
         // Actualizar nombres si cambiaron en Keycloak
         persona.nombres = payload.firstName || persona.nombres;
@@ -92,16 +100,26 @@ export class IdentitySyncHandler {
       });
 
       if (!usuario) {
-        usuario = this.usuarioRepo.create({
-          keycloakId: payload.keycloakId,
-          username: payload.username,
-          idPersona: persona.id,
-          idRol: rol.id,
-          estado: true,
-          ultimoAcceso: new Date(),
-        });
-        await this.usuarioRepo.save(usuario);
-        this.logger.log(`🔗 Usuario sincronizado: ${payload.username} (${primaryRoleName})`);
+        try {
+          usuario = this.usuarioRepo.create({
+            keycloakId: payload.keycloakId,
+            username: payload.username,
+            idPersona: persona.id,
+            idRol: rol.id,
+            estado: true,
+            ultimoAcceso: new Date(),
+          });
+          await this.usuarioRepo.save(usuario);
+          this.logger.log(`🔗 Usuario sincronizado: ${payload.username} (${primaryRoleName})`);
+        } catch (error: any) {
+          if (error.code === '23505') { // Postgres Unique Constraint Violation
+            usuario = await this.usuarioRepo.findOneOrFail({ where: { keycloakId: payload.keycloakId } });
+            usuario.ultimoAcceso = new Date();
+            await this.usuarioRepo.save(usuario);
+          } else {
+            throw error;
+          }
+        }
       } else {
         // Actualizar ultimo acceso y rol (por si cambió en Keycloak)
         usuario.ultimoAcceso = new Date();
