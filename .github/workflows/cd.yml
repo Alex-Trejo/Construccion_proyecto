@@ -71,9 +71,16 @@ jobs:
           if [ -z "$TG_TOKEN" ] || [ -z "$TG_CHAT" ]; then
             echo "Secrets TELEGRAM_* ausentes; se omite la notificación."; exit 0
           fi
-          if [ "$RESULT" = "success" ]; then ICON="🚀"; TXT="imágenes publicadas en GHCR"; else ICON="❌"; TXT="falló el despliegue"; fi
-          MSG=$(printf "%s <b>CD: %s</b>\n<b>Repo:</b> %s\n<b>Rama:</b> %s\n<b>Commit:</b> %s\n<b>Autor:</b> %s" \
-            "$ICON" "$TXT" "$REPO" "$REF" "${GITHUB_SHA:0:7}" "$ACTOR")
+          if [ "$RESULT" = "success" ]; then 
+            ICON="🚀"
+            TXT="Imágenes publicadas en GHCR"
+          else 
+            ICON="❌"
+            TXT="Falló el despliegue"
+          fi
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MSG=$(printf "%s <b>CD: %s</b>\n<b>Repo:</b> %s\n<b>Rama:</b> %s\n<b>Commit:</b> %s\n<b>Autor:</b> %s\n<a href=\"%s\">🔍 Ver detalles / logs</a>" \
+            "$ICON" "$TXT" "$REPO" "$REF" "${GITHUB_SHA:0:7}" "$ACTOR" "$RUN_URL")
           curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
             -d chat_id="${TG_CHAT}" -d parse_mode=HTML -d disable_web_page_preview=true \
             --data-urlencode "text=${MSG}" >/dev/null
