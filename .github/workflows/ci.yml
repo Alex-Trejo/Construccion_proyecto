@@ -129,3 +129,30 @@ jobs:
             -d chat_id="${TG_CHAT}" -d parse_mode=HTML -d disable_web_page_preview=true \
             --data-urlencode "text=${MSG}" >/dev/null
           echo "Notificación enviada a Telegram."
+
+  # ── Crear PR a Main Automáticamente (Solo QA) ────────────────────────────
+  auto-pr:
+    name: Auto PR a Main
+    runs-on: ubuntu-latest
+    needs: [build-test, quality, security]
+    if: success() && github.ref == 'refs/heads/qa'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Crear Pull Request hacia main
+        run: |
+          PR_EXISTS=$(gh pr list --base main --head qa --json url --jq 'length')
+          if [ "$PR_EXISTS" -eq "0" ]; then
+            gh pr create \
+              --base main \
+              --head qa \
+              --title "🚀 Release a Producción (Auto-Generado)" \
+              --body "Este Pull Request fue generado automáticamente porque el código en \`qa\` pasó todas las pruebas y escaneos de seguridad de forma exitosa."
+            echo "PR creado con éxito."
+          else
+            echo "Un PR de qa a main ya se encuentra abierto."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
