@@ -15,12 +15,13 @@ import { ConfigService } from '@nestjs/config';
 import { Logger, ValidationPipe } from '@nestjs/common';
 
 import { AppModule } from './app.module';
+import { createAppLogger } from './observability/loki-logger';
 
 async function bootstrap(): Promise<void> {
   const logger = new Logger('APIGateway:Bootstrap');
 
   const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    logger: createAppLogger('api-gateway'),
   });
 
   // ── Config sin fallbacks ─────────────────────────────────────────────────

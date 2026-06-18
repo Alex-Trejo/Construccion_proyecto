@@ -29,12 +29,15 @@ scrape_configs:
       - targets: ["loki:3100"]
 
   # ─────────────────────────────────────────────────────────────────────────
-  # NestJS Apps (descomentar cuando se integren)
+  # NestJS Apps — corren en el HOST (pnpm dev); Prometheus (contenedor) las
+  # alcanza vía host.docker.internal.
   # ─────────────────────────────────────────────────────────────────────────
-  # - job_name: "api-gateway"
-  #   static_configs:
-  #     - targets: ["api-gateway:3000"]
-  #
-  # - job_name: "ms-core"
-  #   static_configs:
-  #     - targets: ["ms-core:3010"]
+  - job_name: "api-gateway"
+    metrics_path: /api/v1/metrics
+    static_configs:
+      - targets: ["host.docker.internal:3000"]
+
+  - job_name: "ms-core"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:3010"]

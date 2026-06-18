@@ -26,6 +26,7 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 
 import { AppModule } from './app.module';
+import { createAppLogger } from './observability/loki-logger';
 
 async function bootstrap(): Promise<void> {
   const logger = new Logger('MS-Core:Bootstrap');
@@ -36,7 +37,7 @@ async function bootstrap(): Promise<void> {
   //    Si falta una variable de entorno → excepción → proceso muere.
   // ─────────────────────────────────────────────────────────────────────────
   const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    logger: createAppLogger('ms-core'),
   });
 
   // ─────────────────────────────────────────────────────────────────────────

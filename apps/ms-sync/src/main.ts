@@ -17,12 +17,13 @@ import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 
 import { AppModule } from './app.module';
+import { createAppLogger } from './observability/loki-logger';
 
 async function bootstrap(): Promise<void> {
   const logger = new Logger('MsSync:Bootstrap');
 
   const app = await NestFactory.createApplicationContext(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    logger: createAppLogger('ms-sync'),
   });
 
   // Habilitar shutdown hooks para cerrar conexiones IMAP limpiamente

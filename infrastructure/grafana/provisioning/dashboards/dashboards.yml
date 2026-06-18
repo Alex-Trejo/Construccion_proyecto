@@ -1,0 +1,14 @@
+# Grafana — Provisioning de Dashboards
+# Carga los dashboards JSON desde la carpeta /json al iniciar Grafana.
+
+apiVersion: 1
+
+providers:
+  - name: SGC
+    orgId: 1
+    folder: SGC
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/json

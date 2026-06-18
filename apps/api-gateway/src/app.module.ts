@@ -13,6 +13,7 @@ import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MICROSERVICE_TOKENS } from '@sgc/shared';
 
 import {
@@ -65,6 +66,9 @@ import { IdentitySyncInterceptor } from './auth/identity-sync.interceptor';
 
     // ── Autenticación (JWT/Keycloak) ─────────────────────────────────────
     AuthModule,
+
+    // ── Métricas Prometheus (expone /api/v1/metrics) ─────────────────────
+    PrometheusModule.register(),
   ],
   controllers: [HealthController, CommunicationController, SupplierController],
   providers: [

@@ -12,6 +12,7 @@
 
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 import {
   configValidationSchema,
@@ -32,6 +33,9 @@ import { IdentityModule } from './modules/identity/identity.module';
       validationSchema: configValidationSchema,
       validationOptions: configValidationOptions,
     }),
+
+    // ── Métricas Prometheus (expone /metrics en el puerto HTTP) ───────────
+    PrometheusModule.register(),
 
     // ── Base de Datos (TypeORM + PostgreSQL) ──────────────────────────────
     DatabaseModule,
