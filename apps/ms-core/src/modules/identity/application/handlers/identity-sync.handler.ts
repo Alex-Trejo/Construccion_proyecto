@@ -51,88 +51,101 @@ export class IdentitySyncHandler {
   @EventPattern(IDENTITY_PATTERNS.SYNC_USER)
   async syncUser(payload: SyncUserPayload): Promise<{ synced: boolean }> {
     try {
-      // ── 1. Buscar o crear Persona ───────────────────────────────────────
-      let persona = await this.personaRepo.findOne({
-        where: { email: payload.email },
-      });
+      const persona = await this.syncPersona(payload);
 
-      if (!persona) {
-        try {
-          persona = this.personaRepo.create({
-            cedula: null, // Se llenará cuando el admin lo configure en Keycloak
-            nombres: payload.firstName || payload.username,
-            apellidos: payload.lastName || '',
-            email: payload.email,
-          });
-          persona = await this.personaRepo.save(persona);
-          this.logger.log(`👤 Persona creada: ${persona.nombres} ${persona.apellidos}`);
-        } catch (error: any) {
-          if (error.code === '23505') { // Postgres Unique Constraint Violation
-            persona = await this.personaRepo.findOneOrFail({ where: { email: payload.email } });
-          } else {
-            throw error;
-          }
-        }
-      } else {
-        // Actualizar nombres si cambiaron en Keycloak
-        persona.nombres = payload.firstName || persona.nombres;
-        persona.apellidos = payload.lastName || persona.apellidos;
-        await this.personaRepo.save(persona);
-      }
-
-      // ── 2. Determinar el rol principal ──────────────────────────────────
-      const primaryRoleName = payload.roles.find((r) =>
-        ['Administrador', 'Contador', 'Asistente'].includes(r),
-      ) ?? 'Asistente';
-
-      const rol = await this.rolRepo.findOne({
-        where: { nombreRol: primaryRoleName },
-      });
-
+      const rol = await this.getPrimaryRole(payload.roles);
       if (!rol) {
-        this.logger.warn(`Rol "${primaryRoleName}" no encontrado en BD. Omitiendo sync.`);
         return { synced: false };
       }
 
-      // ── 3. Buscar o crear Usuario ───────────────────────────────────────
-      let usuario = await this.usuarioRepo.findOne({
-        where: { keycloakId: payload.keycloakId },
-      });
-
-      if (!usuario) {
-        try {
-          usuario = this.usuarioRepo.create({
-            keycloakId: payload.keycloakId,
-            username: payload.username,
-            idPersona: persona.id,
-            idRol: rol.id,
-            estado: true,
-            ultimoAcceso: new Date(),
-          });
-          await this.usuarioRepo.save(usuario);
-          this.logger.log(`🔗 Usuario sincronizado: ${payload.username} (${primaryRoleName})`);
-        } catch (error: any) {
-          if (error.code === '23505') { // Postgres Unique Constraint Violation
-            usuario = await this.usuarioRepo.findOneOrFail({ where: { keycloakId: payload.keycloakId } });
-            usuario.ultimoAcceso = new Date();
-            await this.usuarioRepo.save(usuario);
-          } else {
-            throw error;
-          }
-        }
-      } else {
-        // Actualizar ultimo acceso y rol (por si cambió en Keycloak)
-        usuario.ultimoAcceso = new Date();
-        usuario.idRol = rol.id;
-        usuario.username = payload.username;
-        await this.usuarioRepo.save(usuario);
-      }
+      await this.syncUsuario(payload, persona.id, rol.id);
 
       return { synced: true };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       this.logger.error(`Error sincronizando usuario ${payload.username}: ${msg}`);
       return { synced: false };
+    }
+  }
+
+  private async syncPersona(payload: SyncUserPayload): Promise<PersonaOrmEntity> {
+    let persona = await this.personaRepo.findOne({
+      where: { email: payload.email },
+    });
+
+    if (!persona) {
+      try {
+        persona = this.personaRepo.create({
+          cedula: null,
+          nombres: payload.firstName || payload.username,
+          apellidos: payload.lastName || '',
+          email: payload.email,
+        });
+        persona = await this.personaRepo.save(persona);
+        this.logger.log(`👤 Persona creada: ${persona.nombres} ${persona.apellidos}`);
+      } catch (error: any) {
+        if (error.code === '23505') {
+          persona = await this.personaRepo.findOneOrFail({ where: { email: payload.email } });
+        } else {
+          throw error;
+        }
+      }
+    } else {
+      persona.nombres = payload.firstName || persona.nombres;
+      persona.apellidos = payload.lastName || persona.apellidos;
+      await this.personaRepo.save(persona);
+    }
+
+    return persona;
+  }
+
+  private async getPrimaryRole(roles: ReadonlyArray<string>): Promise<RolOrmEntity | null> {
+    const primaryRoleName = roles.find((r) =>
+      ['Administrador', 'Contador', 'Asistente'].includes(r),
+    ) ?? 'Asistente';
+
+    const rol = await this.rolRepo.findOne({
+      where: { nombreRol: primaryRoleName },
+    });
+
+    if (!rol) {
+      this.logger.warn(`Rol "${primaryRoleName}" no encontrado en BD. Omitiendo sync.`);
+    }
+
+    return rol;
+  }
+
+  private async syncUsuario(payload: SyncUserPayload, personaId: string, rolId: string): Promise<void> {
+    let usuario = await this.usuarioRepo.findOne({
+      where: { keycloakId: payload.keycloakId },
+    });
+
+    if (!usuario) {
+      try {
+        usuario = this.usuarioRepo.create({
+          keycloakId: payload.keycloakId,
+          username: payload.username,
+          idPersona: personaId,
+          idRol: rolId,
+          estado: true,
+          ultimoAcceso: new Date(),
+        });
+        await this.usuarioRepo.save(usuario);
+        this.logger.log(`🔗 Usuario sincronizado: ${payload.username}`);
+      } catch (error: any) {
+        if (error.code === '23505') {
+          usuario = await this.usuarioRepo.findOneOrFail({ where: { keycloakId: payload.keycloakId } });
+          usuario.ultimoAcceso = new Date();
+          await this.usuarioRepo.save(usuario);
+        } else {
+          throw error;
+        }
+      }
+    } else {
+      usuario.ultimoAcceso = new Date();
+      usuario.idRol = rolId;
+      usuario.username = payload.username;
+      await this.usuarioRepo.save(usuario);
     }
   }
 }

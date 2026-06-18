@@ -79,9 +79,8 @@ export class SriSoapApiAdapter implements SriSoapApiPort {
     claveAcceso: string,
   ): SriAuthorizationResponse {
     // Extraer el contenido del tag <autorizacion>
-    const autorizacionMatch = rawXml.match(
-      /<autorizacion>([\s\S]*?)<\/autorizacion>/,
-    );
+    const authRegex = /<autorizacion>([\s\S]*?)<\/autorizacion>/;
+    const autorizacionMatch = authRegex.exec(rawXml);
 
     if (!autorizacionMatch) {
       throw new Error(
@@ -126,7 +125,7 @@ export class SriSoapApiAdapter implements SriSoapApiPort {
   /** Extrae el contenido de un tag XML simple. */
   private extractTag(xml: string, tagName: string): string {
     const regex = new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`);
-    const match = xml.match(regex);
+    const match = regex.exec(xml);
     return match ? match[1].trim() : '';
   }
 
@@ -152,8 +151,9 @@ export class SriSoapApiAdapter implements SriSoapApiPort {
   private extractMessages(xml: string): ReadonlyArray<SriMessage> {
     const messages: SriMessage[] = [];
     
-    // Extraer todo el bloque <mensajes>
-    const mensajesBlockMatch = xml.match(/<mensajes>([\s\S]*?)<\/mensajes>/);
+    // Extraer el bloque completo de <mensajes>
+    const mensajesRegex = /<mensajes>([\s\S]*?)<\/mensajes>/;
+    const mensajesBlockMatch = mensajesRegex.exec(xml);
     if (!mensajesBlockMatch) return [];
 
     const mensajesBlock = mensajesBlockMatch[1];
