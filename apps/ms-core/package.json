@@ -1,0 +1,42 @@
+{
+  "name": "@sgc/ms-core",
+  "version": "0.0.1",
+  "private": true,
+  "description": "SGC — Microservicio de Negocio (NestJS). Procesa comprobantes del SRI, persistencia y comunicación TCP.",
+  "scripts": {
+    "build": "nest build",
+    "dev": "nest start --watch",
+    "start": "node dist/main.js",
+    "start:debug": "nest start --debug --watch",
+    "lint": "eslint \"{src,test}/**/*.ts\"",
+    "test": "jest",
+    "test:cov": "jest --coverage",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.3.0",
+    "@nestjs/config": "^3.2.0",
+    "@nestjs/core": "^10.3.0",
+    "@nestjs/microservices": "^10.3.0",
+    "@nestjs/platform-express": "^10.3.0",
+    "@nestjs/typeorm": "^10.0.2",
+    "@sgc/shared": "workspace:*",
+    "axios": "^1.7.0",
+    "fast-xml-parser": "^4.4.0",
+    "joi": "^17.13.0",
+    "minio": "^8.0.0",
+    "pg": "^8.12.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "typeorm": "^0.3.20"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.3.0",
+    "@nestjs/schematics": "^10.1.0",
+    "@nestjs/testing": "^10.3.0",
+    "@types/node": "^20.14.0",
+    "@types/pg": "^8.11.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.5.0"
+  }
+}

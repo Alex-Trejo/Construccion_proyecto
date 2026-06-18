@@ -1,0 +1,24 @@
+# Grafana — Provisioning de Datasources
+# Se carga automáticamente al iniciar Grafana.
+
+apiVersion: 1
+
+datasources:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Prometheus — Métricas
+  # ─────────────────────────────────────────────────────────────────────────
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Loki — Logs
+  # ─────────────────────────────────────────────────────────────────────────
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false

@@ -1,0 +1,194 @@
+###############################################################################
+# SGC - Sistema de Gestión de Comprobantes
+# Docker Compose — Entorno de Desarrollo Local
+#
+# Servicios:
+#   1. PostgreSQL 16       → Base de datos relacional
+#   2. Keycloak 24         → Gestión de identidad (IAM)
+#   3. MinIO               → Object Storage S3-compatible
+#   4. Prometheus          → Métricas y alertas
+#   5. Loki                → Agregación de logs
+#   6. Grafana             → Dashboards de observabilidad
+#
+# Uso:
+#   1. Copiar .env.example → .env y completar TODOS los valores.
+#   2. docker compose up -d
+#   3. Verificar: docker compose ps
+###############################################################################
+
+services:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # PostgreSQL — Base de datos principal
+  # ─────────────────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: sgc-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - sgc-network
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Keycloak — Identity and Access Management (IAM)
+  # Modo desarrollo: base de datos embebida, HTTPS deshabilitado.
+  # En producción, apuntar a PostgreSQL externo.
+  # ─────────────────────────────────────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: sgc-keycloak
+    restart: unless-stopped
+    command: start-dev --import-realm
+    ports:
+      - "${KEYCLOAK_PORT}:8080"
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+    volumes:
+      - ./infrastructure/keycloak/realm-sgc-export.json:/opt/keycloak/data/import/realm-sgc-export.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - sgc-network
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # MinIO — Object Storage S3-compatible
+  # Console de administración en MINIO_CONSOLE_PORT.
+  # ─────────────────────────────────────────────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: sgc-minio
+    restart: unless-stopped
+    command: server /data --console-address ":${MINIO_CONSOLE_PORT}"
+    ports:
+      - "${MINIO_API_PORT}:9000"
+      - "${MINIO_CONSOLE_PORT}:${MINIO_CONSOLE_PORT}"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - sgc-network
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Prometheus — Recolección de métricas
+  # ─────────────────────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: sgc-prometheus
+    restart: unless-stopped
+    ports:
+      - "${PROMETHEUS_PORT}:9090"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sgc-network
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Loki — Agregación y consulta de logs
+  # ─────────────────────────────────────────────────────────────────────────────
+  loki:
+    image: grafana/loki:2.9.7
+    container_name: sgc-loki
+    restart: unless-stopped
+    ports:
+      - "${LOKI_PORT}:3100"
+    volumes:
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - sgc-network
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Grafana — Dashboards de observabilidad
+  # Datasources preconfigurados: Prometheus + Loki
+  # ─────────────────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: sgc-grafana
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sgc-network
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Volúmenes Nombrados — Persistencia de datos
+# ═══════════════════════════════════════════════════════════════════════════════
+volumes:
+  pgdata:
+    driver: local
+  minio-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  loki-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Red — Bridge compartida entre todos los servicios
+# ═══════════════════════════════════════════════════════════════════════════════
+networks:
+  sgc-network:
+    driver: bridge

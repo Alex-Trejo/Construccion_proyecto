@@ -1,0 +1,23 @@
+# Dependencias y artefactos (se reinstalan/compilan dentro del build)
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+
+# Secretos y entorno local (NUNCA dentro de la imagen)
+.env
+.env.*
+!.env.example
+
+# Git / CI
+.git
+.github
+
+# Logs y temporales
+*.log
+npm-debug.log*
+
+# IDE
+.vscode
+.idea

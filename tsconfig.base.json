@@ -1,0 +1,59 @@
+{
+  "compilerOptions": {
+    /* ─────────────────────────────────────────────────────────────────────────
+     * REGLA ESTRICTA: TypeScript en modo máximo de seguridad de tipos.
+     * Prohibido `any`. Prohibido implicit any. Todo debe estar tipado.
+     * ───────────────────────────────────────────────────────────────────────── */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+
+    /* ─────────────────────────────────────────────────────────────────────────
+     * Checks adicionales de calidad de código
+     * ───────────────────────────────────────────────────────────────────────── */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "exactOptionalPropertyTypes": true,
+
+    /* ─────────────────────────────────────────────────────────────────────────
+     * Módulos y resolución
+     * ───────────────────────────────────────────────────────────────────────── */
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["ES2022"],
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
+
+    /* ─────────────────────────────────────────────────────────────────────────
+     * Emisión y declaraciones
+     * ───────────────────────────────────────────────────────────────────────── */
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+
+    /* ─────────────────────────────────────────────────────────────────────────
+     * Decoradores (requerido por NestJS)
+     * ───────────────────────────────────────────────────────────────────────── */
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".next",
+    "coverage",
+    ".turbo"
+  ]
+}

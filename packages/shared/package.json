@@ -1,0 +1,23 @@
+{
+  "name": "@sgc/shared",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Interfaces, DTOs, Enums y Constantes compartidos entre apps del SGC",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "clean": "rimraf dist",
+    "lint": "tsc --noEmit"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "rimraf": "^5.0.0"
+  }
+}

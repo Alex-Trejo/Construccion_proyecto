@@ -1,0 +1,40 @@
+# Prometheus — Configuración de scraping para SGC
+# Intervalo global de 15s. Targets: Keycloak métricas + futuros NestJS apps.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Prometheus auto-monitoring
+  # ─────────────────────────────────────────────────────────────────────────
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Keycloak — Métricas expuestas en /metrics
+  # ─────────────────────────────────────────────────────────────────────────
+  - job_name: "keycloak"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["keycloak:8080"]
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Loki — Métricas del agregador de logs
+  # ─────────────────────────────────────────────────────────────────────────
+  - job_name: "loki"
+    static_configs:
+      - targets: ["loki:3100"]
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # NestJS Apps (descomentar cuando se integren)
+  # ─────────────────────────────────────────────────────────────────────────
+  # - job_name: "api-gateway"
+  #   static_configs:
+  #     - targets: ["api-gateway:3000"]
+  #
+  # - job_name: "ms-core"
+  #   static_configs:
+  #     - targets: ["ms-core:3010"]

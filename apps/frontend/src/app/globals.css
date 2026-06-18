@@ -1,0 +1,219 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * SGC Design System — Neo-Brutalist (Positivus Style)
+ *
+ * Paleta: Primary #B9FF66, Secondary #F3F3F3, Dark #191A23, Black #000000
+ * Estilo: Bordes gruesos, esquinas redondeadas, sombras sólidas
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+@theme inline {
+  --color-primary: #B9FF66;
+  --color-secondary: #F3F3F3;
+  --color-dark: #191A23;
+  --color-black: #000000;
+  --color-white: #FFFFFF;
+  --color-primary-hover: #a8e85c;
+  --color-danger: #FF6B6B;
+  --color-warning: #FFD93D;
+  --color-success: #6BCB77;
+
+  --font-sans: 'Space Grotesk', system-ui, sans-serif;
+
+  --shadow-brutal: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-brutal-lg: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-brutal-hover: 2px 2px 0px 0px rgba(0, 0, 0, 1);
+}
+
+/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--color-white);
+  color: var(--color-dark);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Neo-Brutalist Utilities ──────────────────────────────────────────────── */
+
+.brutal-card {
+  border: 2px solid var(--color-black);
+  border-radius: 45px;
+  box-shadow: var(--shadow-brutal);
+  transition: all 0.15s ease;
+}
+
+.brutal-card:hover {
+  box-shadow: var(--shadow-brutal-hover);
+  transform: translate(2px, 2px);
+}
+
+.brutal-card-sm {
+  border: 2px solid var(--color-black);
+  border-radius: 14px;
+  box-shadow: var(--shadow-brutal);
+}
+
+.brutal-btn {
+  border: 2px solid var(--color-black);
+  border-radius: 14px;
+  box-shadow: var(--shadow-brutal);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+}
+
+.brutal-btn:hover {
+  box-shadow: var(--shadow-brutal-hover);
+  transform: translate(2px, 2px);
+}
+
+.brutal-btn:active {
+  box-shadow: none;
+  transform: translate(4px, 4px);
+}
+
+.brutal-btn-primary {
+  background: var(--color-primary);
+  color: var(--color-dark);
+}
+
+.brutal-btn-dark {
+  background: var(--color-dark);
+  color: var(--color-white);
+}
+
+.brutal-btn-secondary {
+  background: var(--color-white);
+  color: var(--color-dark);
+}
+
+.brutal-input {
+  border: 2px solid var(--color-black);
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  width: 100%;
+  outline: none;
+  transition: box-shadow 0.15s ease;
+  background: var(--color-white);
+}
+
+.brutal-input:focus {
+  box-shadow: var(--shadow-brutal);
+}
+
+.brutal-select {
+  border: 2px solid var(--color-black);
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  width: 100%;
+  outline: none;
+  background: var(--color-white);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' viewBox='0 0 12 12'%3E%3Cpath fill='%23000' d='M6 8.825 1.175 4 2.238 2.938 6 6.7l3.763-3.763L10.825 4 6 8.825Z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+}
+
+.brutal-select:focus {
+  box-shadow: var(--shadow-brutal);
+}
+
+/* ── Tag / Badge ──────────────────────────────────────────────────────────── */
+
+.brutal-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid var(--color-black);
+  border-radius: 7px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Table ────────────────────────────────────────────────────────────────── */
+
+.brutal-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 2px solid var(--color-black);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.brutal-table thead {
+  background: var(--color-dark);
+  color: var(--color-white);
+}
+
+.brutal-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.brutal-table td {
+  padding: 1rem;
+  border-top: 1px solid #e0e0e0;
+  font-size: 0.875rem;
+}
+
+.brutal-table tbody tr {
+  transition: background 0.1s ease;
+}
+
+.brutal-table tbody tr:hover {
+  background: var(--color-secondary);
+}
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.4s ease forwards;
+}

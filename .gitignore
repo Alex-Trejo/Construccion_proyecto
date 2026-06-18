@@ -1,0 +1,54 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# SGC Monorepo — .gitignore
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ─── Dependencias ───────────────────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ─── Build outputs ─────────────────────────────────────────────────────────
+dist/
+.next/
+out/
+build/
+
+# ─── Turborepo ──────────────────────────────────────────────────────────────
+.turbo/
+
+# ─── Variables de entorno (NUNCA commitear) ─────────────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ─── Coverage y tests ──────────────────────────────────────────────────────
+coverage/
+*.lcov
+.nyc_output/
+
+# ─── IDE ────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ─── OS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Docker volumes locales ─────────────────────────────────────────────────
+pgdata/
+minio-data/
+
+# ─── Terraform ──────────────────────────────────────────────────────────────
+infrastructure/terraform/.terraform/
+infrastructure/terraform/*.tfstate
+infrastructure/terraform/*.tfstate.backup
+infrastructure/terraform/.terraform.lock.hcl
+
+# ─── Logs ───────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+pnpm-debug.log*

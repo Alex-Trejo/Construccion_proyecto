@@ -1,0 +1,117 @@
+{
+  "id": "sgc-realm",
+  "realm": "sgc-realm",
+  "displayName": "SGC - Sistema de Gestión de Comprobantes",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+
+  "roles": {
+    "realm": [
+      {
+        "name": "Administrador",
+        "description": "Acceso total al sistema: gestión de usuarios, proveedores, comprobantes y configuraciones.",
+        "composite": false
+      },
+      {
+        "name": "Contador",
+        "description": "Gestión de comprobantes: carga, validación, consolidación de reportes fiscales.",
+        "composite": false
+      },
+      {
+        "name": "Asistente",
+        "description": "Consulta de comprobantes y proveedores. Sin permisos de escritura ni consolidación.",
+        "composite": false
+      }
+    ]
+  },
+
+  "defaultRoles": ["Asistente"],
+
+  "clients": [
+    {
+      "clientId": "sgc-frontend",
+      "name": "SGC Frontend (Next.js)",
+      "description": "Cliente confidencial para la app web Next.js (NextAuth). Corre en :3005.",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "local-dev-secret",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "protocol": "openid-connect",
+      "rootUrl": "http://localhost:3005",
+      "baseUrl": "/",
+      "redirectUris": [
+        "http://localhost:3005/*",
+        "http://localhost:3005/api/auth/callback/keycloak"
+      ],
+      "webOrigins": [
+        "http://localhost:3005"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3005/*"
+      }
+    },
+    {
+      "clientId": "sgc-backend",
+      "name": "SGC Backend (API Gateway)",
+      "description": "Cliente confidencial para el API Gateway NestJS. Valida tokens JWT.",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "secret": "CHANGE_ME_IN_PRODUCTION",
+      "attributes": {
+        "use.refresh.tokens": "true"
+      }
+    }
+  ],
+
+  "users": [
+    {
+      "username": "admin-sgc",
+      "email": "admin@sgc.local",
+      "firstName": "Admin",
+      "lastName": "SGC",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["Administrador"]
+    },
+    {
+      "username": "contador-sgc",
+      "email": "contador@sgc.local",
+      "firstName": "Carla",
+      "lastName": "Contadora",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Contador123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["Contador"]
+    }
+  ],
+
+  "passwordPolicy": "length(8) and notUsername and notEmail"
+}
