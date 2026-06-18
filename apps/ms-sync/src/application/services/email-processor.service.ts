@@ -15,7 +15,7 @@
 
 import { Injectable, Inject, Logger, OnModuleInit } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom, timeout, catchError, of } from 'rxjs';
+import { firstValueFrom, timeout, catchError, of, throwError } from 'rxjs';
 import { MICROSERVICE_TOKENS, SYNC_PATTERNS } from '@sgc/shared';
 
 import { type ProcessedEmail } from '../../domain/ports/imap-client.port';
@@ -144,7 +144,7 @@ export class EmailProcessorService implements OnModuleInit {
               this.logger.error(
                 `TCP emit error para ${payload.filename}: ${error.message}`,
               );
-              return of(null);
+              return throwError(() => error);
             }),
           ),
       );
