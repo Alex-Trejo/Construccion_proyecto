@@ -48,13 +48,17 @@ export class CommunicationTcpController {
     return this.listEmailsUseCase.execute({
       page: payload.data.page,
       limit: payload.data.limit,
+      ownerId: payload.metadata.userId,
     });
   }
 
   @MessagePattern(COMMUNICATION_PATTERNS.GET_EMAIL_DETAIL)
   async getEmailDetail(payload: TcpPayload<GetEmailDetailPayload>) {
     this.logger.debug(`TCP: GET_EMAIL_DETAIL ${payload.data.emailId}`);
-    return this.getEmailDetailUseCase.execute(payload.data.emailId);
+    return this.getEmailDetailUseCase.execute(
+      payload.data.emailId,
+      payload.metadata.userId,
+    );
   }
 
   @MessagePattern(COMMUNICATION_PATTERNS.GET_ATTACHMENT_URL)
@@ -65,6 +69,7 @@ export class CommunicationTcpController {
     return this.getAttachmentUrlUseCase.execute(
       payload.data.emailId,
       payload.data.attachmentId,
+      payload.metadata.userId,
     );
   }
 }

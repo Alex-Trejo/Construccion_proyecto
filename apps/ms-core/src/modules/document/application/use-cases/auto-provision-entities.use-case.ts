@@ -65,7 +65,10 @@ export class AutoProvisionEntitiesUseCase {
    * @param parsedDoc - Documento parseado con RUC emisor y receptor.
    * @returns Resultado del aprovisionamiento.
    */
-  async execute(parsedDoc: ParsedSriDocument): Promise<AutoProvisionResult> {
+  async execute(
+    parsedDoc: ParsedSriDocument,
+    ownerId: string | null = null,
+  ): Promise<AutoProvisionResult> {
     const issuerRuc = parsedDoc.issuerTaxId;
     const buyerRuc = parsedDoc.buyerTaxId;
 
@@ -77,9 +80,9 @@ export class AutoProvisionEntitiesUseCase {
     let supplierCreated = false;
     let supplierDisplayName: string | null = null;
 
-    // Proveedor auto-provisionado por el sistema (ownerId null hasta que el
-    // flujo IMAP multiusuario inyecte el dueño real — Fase D).
-    const systemOwner: string | null = null;
+    // El proveedor auto-provisionado pertenece al dueño del correo (userId
+    // inyectado por ms-sync). Si no hay dueño, queda como registro de sistema.
+    const systemOwner: string | null = ownerId;
     const existingSupplier = await this.supplierRepo.findByTaxId(
       issuerRuc,
       systemOwner,

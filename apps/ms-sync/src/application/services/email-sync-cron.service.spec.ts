@@ -2,12 +2,18 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmailSyncCronService } from './email-sync-cron.service';
 import { EmailProcessorService } from './email-processor.service';
+import { of } from 'rxjs';
+
+jest.mock('../../common/crypto.util', () => ({
+  decryptSecret: jest.fn().mockReturnValue('decrypted_password'),
+}));
 
 describe('EmailSyncCronService', () => {
   let cronService: EmailSyncCronService;
   let imapClientMock: any;
   let emailProcessorMock: any;
   let configServiceMock: any;
+  let msCoreClientMock: any;
 
   beforeEach(() => {
     imapClientMock = {
@@ -19,6 +25,16 @@ describe('EmailSyncCronService', () => {
     configServiceMock = {
       getOrThrow: jest.fn().mockReturnValue(1),
     };
+    msCoreClientMock = {
+      send: jest.fn().mockReturnValue(of([{
+        host: 'imap.test.com',
+        port: 993,
+        email: 'test@test.com',
+        passwordEncrypted: 'encrypted',
+        tls: true,
+        ownerId: '123',
+      }])),
+    };
 
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
@@ -27,6 +43,7 @@ describe('EmailSyncCronService', () => {
 
     cronService = new EmailSyncCronService(
       imapClientMock,
+      msCoreClientMock,
       emailProcessorMock,
       configServiceMock,
     );
@@ -55,7 +72,7 @@ describe('EmailSyncCronService', () => {
     await cronService.runSync();
 
     expect(imapClientMock.fetchUnseenWithAttachments).toHaveBeenCalled();
-    expect(emailProcessorMock.processEmails).toHaveBeenCalledWith(mockEmails);
+    expect(emailProcessorMock.processEmails).toHaveBeenCalledWith(mockEmails, '123');
   });
 
   it('should not process if no emails are found', async () => {

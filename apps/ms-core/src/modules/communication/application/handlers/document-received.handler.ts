@@ -34,6 +34,8 @@ import { ProcessSriXmlUseCase } from '../../../document/application/use-cases/pr
 
 /** Payload recibido de ms-sync (debe coincidir con DocumentReceivedPayload). */
 interface IncomingDocumentPayload {
+  /** Dueño del correo (userId del JWT). Puede faltar en eventos legados. */
+  readonly userId?: string;
   readonly filename: string;
   readonly extension: string;
   readonly contentBase64: string;
@@ -75,10 +77,13 @@ export class DocumentReceivedHandler {
       `📥 Documento recibido: ${payload.filename} de ${payload.emailFrom}`,
     );
 
+    const ownerId = payload.userId ?? null;
+
     try {
-      // ── 1. Deduplicación por Message-ID ─────────────────────────────────
+      // ── 1. Deduplicación por Message-ID (dentro del buzón del dueño) ─────
       const alreadyExists = await this.emailRepo.existsByMessageId(
         payload.emailMessageId,
+        ownerId,
       );
 
       if (alreadyExists) {
@@ -129,6 +134,7 @@ export class DocumentReceivedHandler {
 
       const receivedEmail = new ReceivedEmail({
         id: emailId,
+        ownerId,
         emailFrom: payload.emailFrom,
         emailSubject: payload.emailSubject,
         emailDate: new Date(payload.emailDate),
@@ -145,7 +151,7 @@ export class DocumentReceivedHandler {
 
       // ── 6. Si es XML → Ejecutar pipeline SRI completo ──────────────────
       if (payload.extension === 'xml') {
-        await this.processXmlAttachment(fileBuffer, payload.filename);
+        await this.processXmlAttachment(fileBuffer, payload.filename, ownerId);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -163,11 +169,16 @@ export class DocumentReceivedHandler {
   private async processXmlAttachment(
     fileBuffer: Buffer,
     filename: string,
+    ownerId: string | null,
   ): Promise<void> {
     this.logger.log(`🔗 Iniciando pipeline SRI para XML: ${filename}`);
 
     const rawXml = fileBuffer.toString('utf-8');
-    const result = await this.processSriXmlUseCase.execute(rawXml, filename);
+    const result = await this.processSriXmlUseCase.execute(
+      rawXml,
+      filename,
+      ownerId,
+    );
 
     if (result.success) {
       this.logger.log(

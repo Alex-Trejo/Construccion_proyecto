@@ -63,7 +63,8 @@ describe('SupplierTcpController', () => {
     (controller as any).toISupplier = jest.fn().mockReturnValue(mockSupplier);
     findAllSuppliersUseCaseMock.execute.mockResolvedValue([mockSupplier]);
 
-    const result = await controller.findAll();
+    const payload = { data: {}, metadata: { userId: 'user-1' } as any };
+    const result = await controller.findAll(payload);
 
     expect(result.length).toBe(1);
     expect(findAllSuppliersUseCaseMock.execute).toHaveBeenCalled();

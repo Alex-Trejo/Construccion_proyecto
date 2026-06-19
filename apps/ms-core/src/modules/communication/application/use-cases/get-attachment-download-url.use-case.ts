@@ -52,12 +52,13 @@ export class GetAttachmentDownloadUrlUseCase {
   async execute(
     emailId: string,
     attachmentId: string,
+    ownerId: string | null,
   ): Promise<DownloadUrlResult | null> {
     this.logger.debug(
       `Generando URL para adjunto: email=${emailId}, attachment=${attachmentId}`,
     );
 
-    const email = await this.emailRepo.findById(emailId);
+    const email = await this.emailRepo.findById(emailId, ownerId);
     if (!email) {
       this.logger.warn(`Correo ${emailId} no encontrado`);
       return null;

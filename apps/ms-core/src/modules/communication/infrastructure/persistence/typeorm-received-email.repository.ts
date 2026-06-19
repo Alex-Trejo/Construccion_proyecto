@@ -9,7 +9,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository, type FindOptionsWhere } from 'typeorm';
 
 import {
   type ReceivedEmailRepositoryPort,
@@ -37,11 +37,17 @@ export class TypeOrmReceivedEmailRepository implements ReceivedEmailRepositoryPo
     return this.toDomain(saved);
   }
 
+  /** Predicado de dueño (maneja null = sistema). */
+  private owner(ownerId: string | null): string | ReturnType<typeof IsNull> {
+    return ownerId === null ? IsNull() : ownerId;
+  }
+
   async findPaginated(params: PaginationParams): Promise<PaginatedEmails> {
-    const { page, limit } = params;
+    const { page, limit, ownerId } = params;
     const skip = (page - 1) * limit;
 
     const [schemas, total] = await this.emailRepository.findAndCount({
+      where: { ownerId: this.owner(ownerId) } as FindOptionsWhere<ReceivedEmailOrmEntity>,
       order: { emailDate: 'DESC' },
       skip,
       take: limit,
@@ -57,9 +63,9 @@ export class TypeOrmReceivedEmailRepository implements ReceivedEmailRepositoryPo
     };
   }
 
-  async findById(id: string): Promise<ReceivedEmail | null> {
+  async findById(id: string, ownerId: string | null): Promise<ReceivedEmail | null> {
     const schema = await this.emailRepository.findOne({
-      where: { id },
+      where: { id, ownerId: this.owner(ownerId) } as FindOptionsWhere<ReceivedEmailOrmEntity>,
       relations: ['attachments'],
     });
 
@@ -67,9 +73,15 @@ export class TypeOrmReceivedEmailRepository implements ReceivedEmailRepositoryPo
     return this.toDomain(schema);
   }
 
-  async existsByMessageId(messageId: string): Promise<boolean> {
+  async existsByMessageId(
+    messageId: string,
+    ownerId: string | null,
+  ): Promise<boolean> {
     const count = await this.emailRepository.count({
-      where: { emailMessageId: messageId },
+      where: {
+        emailMessageId: messageId,
+        ownerId: this.owner(ownerId),
+      } as FindOptionsWhere<ReceivedEmailOrmEntity>,
     });
     return count > 0;
   }
@@ -79,6 +91,7 @@ export class TypeOrmReceivedEmailRepository implements ReceivedEmailRepositoryPo
   private toSchema(domain: ReceivedEmail): ReceivedEmailOrmEntity {
     const schema = new ReceivedEmailOrmEntity();
     schema.id = domain.id;
+    schema.ownerId = domain.ownerId;
     schema.emailFrom = domain.emailFrom;
     schema.emailSubject = domain.emailSubject;
     schema.emailDate = domain.emailDate;
@@ -118,6 +131,7 @@ export class TypeOrmReceivedEmailRepository implements ReceivedEmailRepositoryPo
 
     return new ReceivedEmail({
       id: schema.id,
+      ownerId: schema.ownerId,
       emailFrom: schema.emailFrom,
       emailSubject: schema.emailSubject,
       emailDate: schema.emailDate,

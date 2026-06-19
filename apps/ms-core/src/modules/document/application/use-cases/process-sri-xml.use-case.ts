@@ -66,6 +66,7 @@ export class ProcessSriXmlUseCase {
   async execute(
     xmlContent: string,
     fileName: string,
+    ownerId: string | null = null,
   ): Promise<ProcessSriXmlResult> {
     this.logger.log(`Procesando pipeline XML del SRI: ${fileName}`);
 
@@ -103,7 +104,10 @@ export class ProcessSriXmlUseCase {
 
     // ── Paso 3: Auto-creación de Proveedor y Compañía ────────────────────
     try {
-      const provisionResult = await this.autoProvisionEntities.execute(parsedDocument);
+      const provisionResult = await this.autoProvisionEntities.execute(
+        parsedDocument,
+        ownerId,
+      );
       if (provisionResult.supplierCreated) {
         this.logger.log(`Proveedor ${provisionResult.supplierRuc} auto-creado exitosamente.`);
       }
