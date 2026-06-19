@@ -26,6 +26,9 @@ import { SupplierOrmEntity } from '../modules/supplier/infrastructure/persistenc
 import { IncomingInvoiceOrmEntity } from '../modules/document/infrastructure/persistence/incoming-invoice.orm-entity';
 import { CompanyOrmEntity } from '../modules/supplier/infrastructure/persistence/company.orm-entity';
 import { TipoComprobanteOrmEntity } from '../modules/document/infrastructure/persistence/tipo-comprobante.orm-entity';
+import { DocumentOrmEntity } from '../modules/document/infrastructure/persistence/document.orm-entity';
+import { DocumentItemOrmEntity } from '../modules/document/infrastructure/persistence/document-item.orm-entity';
+import { DocumentTaxOrmEntity } from '../modules/document/infrastructure/persistence/document-tax.orm-entity';
 
 // ── Identity entities (Shadow Tables de Keycloak) ────────────────────────────
 import { RolOrmEntity } from '../modules/identity/infrastructure/persistence/rol.orm-entity';
@@ -55,6 +58,9 @@ import { UsuarioOrmEntity } from '../modules/identity/infrastructure/persistence
           // Document
           IncomingInvoiceOrmEntity,
           TipoComprobanteOrmEntity,
+          DocumentOrmEntity,
+          DocumentItemOrmEntity,
+          DocumentTaxOrmEntity,
           // Identity (Shadow Tables de Keycloak — Rúbrica 3.1)
           RolOrmEntity,
           PersonaOrmEntity,

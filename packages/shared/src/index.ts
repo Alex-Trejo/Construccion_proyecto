@@ -49,6 +49,17 @@ export type { IUploadDocumentDto } from './dtos/upload-document.dto';
 export type { IUpdateSupplierDto } from './dtos/update-supplier.dto';
 
 export type {
+  ICreateDocumentItemDto,
+  ICreateDocumentTaxDto,
+  ICreateDocumentDto,
+  IDocumentItemDto,
+  IDocumentTaxDto,
+  IDocumentDto,
+  IOcrResultDto,
+  IPaginatedDocuments,
+} from './dtos/document.dto';
+
+export type {
   IUserDto,
   ICreateUserDto,
   IAssignRolesDto,

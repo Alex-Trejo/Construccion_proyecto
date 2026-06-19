@@ -30,28 +30,61 @@ import { XmlValidatorAdapter } from './infrastructure/adapters/xml-validator.ada
 import { SriSoapApiAdapter } from './infrastructure/adapters/sri-soap-api.adapter';
 import { SriRestApiAdapter } from './infrastructure/adapters/sri-rest-api.adapter';
 import { XmlSriParserAdapter } from './infrastructure/adapters/xml-sri-parser.adapter';
+import { OpenAiOcrAdapter } from './infrastructure/adapters/openai-ocr.adapter';
 import { IncomingInvoiceOrmEntity } from './infrastructure/persistence/incoming-invoice.orm-entity';
 import { TypeOrmIncomingInvoiceRepository } from './infrastructure/persistence/typeorm-incoming-invoice.repository';
 import { TypeOrmCompanyRepository } from './infrastructure/persistence/typeorm-company.repository';
+import { TypeOrmDocumentRepository } from './infrastructure/persistence/typeorm-document.repository';
 import { CompanyOrmEntity } from '../supplier/infrastructure/persistence/company.orm-entity';
+import { DocumentOrmEntity } from './infrastructure/persistence/document.orm-entity';
+import { OCR_PORT } from './domain/ports/ocr.port';
+import { DOCUMENT_REPOSITORY_PORT } from './domain/ports/document-repository.port';
+import { OBJECT_STORAGE_PORT } from '../communication/domain/ports/object-storage.port';
+import { MinioAdapter } from '../communication/infrastructure/adapters/minio.adapter';
 
 import { FetchAndSanitizeXmlUseCase } from './application/use-cases/fetch-and-sanitize-xml.use-case';
 import { ProcessSriXmlUseCase } from './application/use-cases/process-sri-xml.use-case';
 import { AutoProvisionEntitiesUseCase } from './application/use-cases/auto-provision-entities.use-case';
+import { ProcessTxtBatchUseCase } from './application/use-cases/process-txt-batch.use-case';
+import { ProcessPhysicalDocumentUseCase } from './application/use-cases/process-physical-document.use-case';
+import { CreateDocumentUseCase } from './application/use-cases/create-document.use-case';
+import {
+  FindDocumentsUseCase,
+  FindDocumentByIdUseCase,
+  GetDocumentPreviewUseCase,
+} from './application/use-cases/find-documents.use-case';
+import { DocumentTcpController } from './presentation/document-tcp.controller';
 
 import { SupplierModule } from '../supplier/supplier.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([IncomingInvoiceOrmEntity, CompanyOrmEntity]),
+    TypeOrmModule.forFeature([
+      IncomingInvoiceOrmEntity,
+      CompanyOrmEntity,
+      DocumentOrmEntity,
+    ]),
     // SupplierModule exporta SUPPLIER_REPOSITORY_PORT (usado por AutoProvision).
     SupplierModule,
   ],
+  controllers: [DocumentTcpController],
   providers: [
     // ── Infrastructure Adapters ──────────────────────────────────────────
     {
       provide: XML_SANITIZER_PORT,
       useClass: XmlSanitizerAdapter,
+    },
+    {
+      provide: OCR_PORT,
+      useClass: OpenAiOcrAdapter,
+    },
+    {
+      provide: OBJECT_STORAGE_PORT,
+      useClass: MinioAdapter,
+    },
+    {
+      provide: DOCUMENT_REPOSITORY_PORT,
+      useClass: TypeOrmDocumentRepository,
     },
     {
       provide: XML_VALIDATOR_PORT,
@@ -82,6 +115,12 @@ import { SupplierModule } from '../supplier/supplier.module';
     FetchAndSanitizeXmlUseCase,
     ProcessSriXmlUseCase,
     AutoProvisionEntitiesUseCase,
+    ProcessTxtBatchUseCase,
+    ProcessPhysicalDocumentUseCase,
+    CreateDocumentUseCase,
+    FindDocumentsUseCase,
+    FindDocumentByIdUseCase,
+    GetDocumentPreviewUseCase,
   ],
   exports: [
     FetchAndSanitizeXmlUseCase,

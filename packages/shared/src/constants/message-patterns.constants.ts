@@ -40,6 +40,16 @@ export const DOCUMENT_PATTERNS = {
   FIND_BY_ACCESS_KEY: 'CORE_DOCUMENT_FIND_BY_ACCESS_KEY',
   UPDATE_STATUS: 'CORE_DOCUMENT_UPDATE_STATUS',
   FIND_BY_SUPPLIER: 'CORE_DOCUMENT_FIND_BY_SUPPLIER',
+  /** OCR de comprobante físico (imagen → MinIO → OpenAI → datos). */
+  PROCESS_PHYSICAL: 'CORE_DOCUMENT_PROCESS_PHYSICAL',
+  /** Guarda un comprobante revisado (unicidad RUC + Nº factura). */
+  CREATE: 'CORE_DOCUMENT_CREATE',
+  /** Pre-Signed URL del archivo original. */
+  PREVIEW: 'CORE_DOCUMENT_PREVIEW',
+  /** KPIs del dashboard (Fase D). */
+  METRICS: 'CORE_DOCUMENT_METRICS',
+  /** Datos para exportación XLSX (Fase D). */
+  EXPORT: 'CORE_DOCUMENT_EXPORT',
 } as const;
 
 /** Patrones de mensajería para el módulo IMAP Sync (ms-sync). */

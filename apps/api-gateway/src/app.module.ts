@@ -26,6 +26,7 @@ import { SupplierController } from './controllers/supplier.controller';
 import { HealthController } from './controllers/health.controller';
 import { UserController } from './controllers/user.controller';
 import { RoleController } from './controllers/role.controller';
+import { DocumentController } from './controllers/document.controller';
 import { IdentitySyncInterceptor } from './auth/identity-sync.interceptor';
 import { KeycloakAdminService } from './keycloak/keycloak-admin.service';
 
@@ -79,6 +80,7 @@ import { KeycloakAdminService } from './keycloak/keycloak-admin.service';
     SupplierController,
     UserController,
     RoleController,
+    DocumentController,
   ],
   providers: [
     KeycloakAdminService,
