@@ -46,6 +46,7 @@ export type {
 } from './dtos/create-supplier.dto';
 
 export type { IUploadDocumentDto } from './dtos/upload-document.dto';
+export type { IUpdateSupplierDto } from './dtos/update-supplier.dto';
 
 export type {
   IUserDto,

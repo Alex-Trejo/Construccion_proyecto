@@ -20,59 +20,49 @@ import { Supplier } from '../entities/supplier.entity';
  */
 export interface SupplierRepositoryPort {
   /**
-   * Persiste una nueva entidad Supplier.
-   * @param supplier - Entidad de dominio a guardar.
-   * @returns La entidad persistida con su ID.
+   * Persiste una entidad Supplier (el dueño se toma de `supplier.ownerId`).
    */
   save(supplier: Supplier): Promise<Supplier>;
 
   /**
-   * Busca un proveedor por su ID.
-   * @param id - UUID del proveedor.
-   * @returns La entidad encontrada o null si no existe.
+   * Busca un proveedor por ID, restringido al dueño (aislamiento).
+   * @param ownerId - Dueño (userId). null = registros del sistema.
    */
-  findById(id: string): Promise<Supplier | null>;
+  findById(id: string, ownerId: string | null): Promise<Supplier | null>;
 
   /**
-   * Busca un proveedor por su RUC/Cédula.
-   * @param taxId - RUC (13 dígitos) o Cédula (10 dígitos).
-   * @returns La entidad encontrada o null si no existe.
+   * Busca un proveedor por RUC/Cédula, restringido al dueño.
    */
-  findByTaxId(taxId: string): Promise<Supplier | null>;
+  findByTaxId(taxId: string, ownerId: string | null): Promise<Supplier | null>;
 
   /**
-   * Retorna todos los proveedores activos.
-   * @returns Array de entidades Supplier.
+   * Retorna los proveedores activos del dueño.
    */
-  findAll(): Promise<ReadonlyArray<Supplier>>;
+  findAll(ownerId: string | null): Promise<ReadonlyArray<Supplier>>;
 
   /**
-   * Retorna proveedores paginados.
-   * @param page - Número de página (1-indexed).
-   * @param limit - Elementos por página.
-   * @returns Tupla [items, totalCount].
+   * Retorna proveedores paginados del dueño.
    */
-  findPaginated(page: number, limit: number): Promise<[ReadonlyArray<Supplier>, number]>;
+  findPaginated(
+    page: number,
+    limit: number,
+    ownerId: string | null,
+  ): Promise<[ReadonlyArray<Supplier>, number]>;
 
   /**
-   * Actualiza una entidad Supplier existente.
-   * @param supplier - Entidad con datos actualizados.
-   * @returns La entidad actualizada.
+   * Actualiza un proveedor existente (el dueño se valida en el caso de uso).
    */
   update(supplier: Supplier): Promise<Supplier>;
 
   /**
-   * Desactiva (soft delete) un proveedor.
-   * @param id - UUID del proveedor a desactivar.
+   * Desactiva (soft delete) un proveedor del dueño.
    */
-  deactivate(id: string): Promise<void>;
+  deactivate(id: string, ownerId: string | null): Promise<void>;
 
   /**
-   * Verifica si ya existe un proveedor con el taxId dado.
-   * @param taxId - RUC o Cédula.
-   * @returns true si existe, false si no.
+   * Verifica si el dueño ya tiene un proveedor con el taxId dado.
    */
-  existsByTaxId(taxId: string): Promise<boolean>;
+  existsByTaxId(taxId: string, ownerId: string | null): Promise<boolean>;
 }
 
 /**

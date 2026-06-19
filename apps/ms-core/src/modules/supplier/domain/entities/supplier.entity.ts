@@ -19,6 +19,8 @@ import { SupplierCode } from '../value-objects/supplier-code.vo';
 
 export interface SupplierProps {
   readonly id: string;
+  /** Dueño del registro (userId/keycloak sub). null = creado por el sistema. */
+  readonly ownerId: string | null;
   readonly supplierCode: SupplierCode;
   readonly supplierType: SupplierType;
   readonly ruc: Ruc;
@@ -39,6 +41,10 @@ export abstract class Supplier {
 
   public get id(): string {
     return this.props.id;
+  }
+
+  public get ownerId(): string | null {
+    return this.props.ownerId;
   }
 
   public get supplierCode(): SupplierCode {

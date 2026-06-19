@@ -15,10 +15,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   Logger,
+  Param,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
@@ -28,6 +31,7 @@ import {
   MICROSERVICE_TOKENS,
   SUPPLIER_PATTERNS,
   type ICreateSupplierDto,
+  type IUpdateSupplierDto,
   type ISupplier,
   type TcpPayload,
 } from '@sgc/shared';
@@ -90,6 +94,60 @@ export class SupplierController {
     return firstValueFrom(
       this.msCoreClient
         .send<ReadonlyArray<ISupplier>>(SUPPLIER_PATTERNS.FIND_ALL, payload)
+        .pipe(timeout(TCP_TIMEOUT_MS)),
+    );
+  }
+
+  /** GET /suppliers/:id — detalle de un proveedor del usuario. */
+  @Get(':id')
+  async findById(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ISupplier> {
+    const payload: TcpPayload<{ id: string }> = {
+      data: { id },
+      metadata: buildTcpMetadata(user),
+    };
+    return firstValueFrom(
+      this.msCoreClient
+        .send<ISupplier>(SUPPLIER_PATTERNS.FIND_BY_ID, payload)
+        .pipe(timeout(TCP_TIMEOUT_MS)),
+    );
+  }
+
+  /** PUT /suppliers/:id — actualiza un proveedor del usuario. */
+  @Put(':id')
+  @Roles('Administrador', 'Contador')
+  async update(
+    @Param('id') id: string,
+    @Body() changes: IUpdateSupplierDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ISupplier> {
+    const payload: TcpPayload<{ id: string; changes: IUpdateSupplierDto }> = {
+      data: { id, changes },
+      metadata: buildTcpMetadata(user),
+    };
+    return firstValueFrom(
+      this.msCoreClient
+        .send<ISupplier>(SUPPLIER_PATTERNS.UPDATE, payload)
+        .pipe(timeout(TCP_TIMEOUT_MS)),
+    );
+  }
+
+  /** DELETE /suppliers/:id — desactiva (soft delete) un proveedor del usuario. */
+  @Delete(':id')
+  @Roles('Administrador', 'Contador')
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ deleted: string }> {
+    const payload: TcpPayload<{ id: string }> = {
+      data: { id },
+      metadata: buildTcpMetadata(user),
+    };
+    return firstValueFrom(
+      this.msCoreClient
+        .send<{ deleted: string }>(SUPPLIER_PATTERNS.DEACTIVATE, payload)
         .pipe(timeout(TCP_TIMEOUT_MS)),
     );
   }

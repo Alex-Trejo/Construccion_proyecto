@@ -57,7 +57,10 @@ export class SupplierFactory {
    * // supplier.supplierCode.value → "PROV-NAT-2026-a1b2c3d4"
    * ```
    */
-  public static create(dto: ICreateSupplierDto): Supplier {
+  public static create(
+    dto: ICreateSupplierDto,
+    ownerId: string | null,
+  ): Supplier {
     const id = randomUUID();
     const ruc = Ruc.create(dto.taxId);
     // El código se deriva de los datos ingresados (tipo + RUC/Cédula).
@@ -67,12 +70,12 @@ export class SupplierFactory {
     switch (dto.supplierType) {
       case SupplierType.PERSONA_NATURAL:
         return SupplierFactory.createPersonaNatural(
-          id, supplierCode, ruc, now, dto,
+          id, ownerId, supplierCode, ruc, now, dto,
         );
 
       case SupplierType.PERSONA_JURIDICA:
         return SupplierFactory.createPersonaJuridica(
-          id, supplierCode, ruc, now, dto,
+          id, ownerId, supplierCode, ruc, now, dto,
         );
 
       default: {
@@ -88,6 +91,7 @@ export class SupplierFactory {
 
   private static createPersonaNatural(
     id: string,
+    ownerId: string | null,
     supplierCode: SupplierCode,
     ruc: Ruc,
     now: Date,
@@ -95,6 +99,7 @@ export class SupplierFactory {
   ): PersonaNaturalSupplier {
     return new PersonaNaturalSupplier({
       id,
+      ownerId,
       supplierCode,
       supplierType: SupplierType.PERSONA_NATURAL,
       ruc,
@@ -112,6 +117,7 @@ export class SupplierFactory {
 
   private static createPersonaJuridica(
     id: string,
+    ownerId: string | null,
     supplierCode: SupplierCode,
     ruc: Ruc,
     now: Date,
@@ -119,6 +125,7 @@ export class SupplierFactory {
   ): PersonaJuridicaSupplier {
     return new PersonaJuridicaSupplier({
       id,
+      ownerId,
       supplierCode,
       supplierType: SupplierType.PERSONA_JURIDICA,
       ruc,

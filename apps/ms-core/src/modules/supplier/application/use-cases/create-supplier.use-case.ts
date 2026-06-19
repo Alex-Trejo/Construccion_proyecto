@@ -26,8 +26,11 @@ export class CreateSupplierUseCase {
     private readonly supplierRepo: SupplierRepositoryPort,
   ) {}
 
-  async execute(dto: ICreateSupplierDto): Promise<Supplier> {
-    const exists = await this.supplierRepo.existsByTaxId(dto.taxId);
+  async execute(
+    dto: ICreateSupplierDto,
+    ownerId: string | null,
+  ): Promise<Supplier> {
+    const exists = await this.supplierRepo.existsByTaxId(dto.taxId, ownerId);
     if (exists) {
       throw new ConflictException(
         `Ya existe un proveedor con RUC/Cédula ${dto.taxId}.`,
@@ -35,7 +38,7 @@ export class CreateSupplierUseCase {
     }
 
     // Factory Method: crea PersonaNatural o PersonaJuridica según el tipo.
-    const supplier = SupplierFactory.create(dto);
+    const supplier = SupplierFactory.create(dto, ownerId);
     const saved = await this.supplierRepo.save(supplier);
 
     this.logger.log(

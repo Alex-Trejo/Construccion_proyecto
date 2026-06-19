@@ -77,7 +77,13 @@ export class AutoProvisionEntitiesUseCase {
     let supplierCreated = false;
     let supplierDisplayName: string | null = null;
 
-    const existingSupplier = await this.supplierRepo.findByTaxId(issuerRuc);
+    // Proveedor auto-provisionado por el sistema (ownerId null hasta que el
+    // flujo IMAP multiusuario inyecte el dueño real — Fase D).
+    const systemOwner: string | null = null;
+    const existingSupplier = await this.supplierRepo.findByTaxId(
+      issuerRuc,
+      systemOwner,
+    );
 
     if (!existingSupplier) {
       this.logger.log(`Proveedor ${issuerRuc} no existe. Consultando catastro SRI...`);
@@ -86,7 +92,7 @@ export class AutoProvisionEntitiesUseCase {
 
       if (sriData) {
         const dto = this.mapSriDataToCreateDto(sriData);
-        const supplier = SupplierFactory.create(dto);
+        const supplier = SupplierFactory.create(dto, systemOwner);
         await this.supplierRepo.save(supplier);
         supplierCreated = true;
         supplierDisplayName = supplier.getDisplayName();
