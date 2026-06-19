@@ -24,6 +24,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   IDENTITY_PATTERNS,
   MICROSERVICE_TOKENS,
@@ -37,6 +38,8 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { KeycloakAdminService } from '../keycloak/keycloak-admin.service';
 
+@ApiTags('Users (IAM)')
+@ApiBearerAuth()
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('Administrador')

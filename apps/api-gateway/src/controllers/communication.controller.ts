@@ -25,6 +25,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { buildTcpMetadata } from '../auth/tcp-metadata';
@@ -39,6 +40,8 @@ import {
 /** Timeout para llamadas TCP al ms-core (ms). */
 const TCP_TIMEOUT_MS = 10_000;
 
+@ApiTags('Communications')
+@ApiBearerAuth()
 @Controller('communications')
 @UseGuards(JwtAuthGuard)
 export class CommunicationController {

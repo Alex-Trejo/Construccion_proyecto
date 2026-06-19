@@ -22,6 +22,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { firstValueFrom, timeout } from 'rxjs';
 import {
   MICROSERVICE_TOKENS,
@@ -41,6 +42,8 @@ import type { AuthenticatedUser } from '../auth/keycloak-jwt.strategy';
 /** Timeout para llamadas TCP al ms-core (ms). */
 const TCP_TIMEOUT_MS = 10_000;
 
+@ApiTags('Suppliers')
+@ApiBearerAuth()
 @Controller('suppliers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SupplierController {
