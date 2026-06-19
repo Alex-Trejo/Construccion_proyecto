@@ -60,6 +60,18 @@ export type {
 } from './dtos/document.dto';
 
 export type {
+  ICreateImapConfigDto,
+  IImapConfigDto,
+  IImapActiveConfig,
+} from './dtos/imap-config.dto';
+
+export type {
+  IMetricByEstado,
+  IMetricByMes,
+  IDashboardMetrics,
+} from './dtos/report.dto';
+
+export type {
   IUserDto,
   ICreateUserDto,
   IAssignRolesDto,
@@ -74,6 +86,7 @@ export {
   SYNC_PATTERNS,
   COMMUNICATION_PATTERNS,
   IDENTITY_PATTERNS,
+  IMAP_PATTERNS,
   MICROSERVICE_TOKENS,
 } from './constants/message-patterns.constants';
 

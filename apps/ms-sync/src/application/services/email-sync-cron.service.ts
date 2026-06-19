@@ -19,12 +19,20 @@
 import { Injectable, Inject, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom, timeout } from 'rxjs';
+import {
+  IMAP_PATTERNS,
+  MICROSERVICE_TOKENS,
+  type IImapActiveConfig,
+} from '@sgc/shared';
 
 import {
   type ImapClientPort,
   IMAP_CLIENT_PORT,
 } from '../../domain/ports/imap-client.port';
 import { EmailProcessorService } from './email-processor.service';
+import { decryptSecret } from '../../common/crypto.util';
 
 @Injectable()
 export class EmailSyncCronService implements OnModuleDestroy {
@@ -39,9 +47,15 @@ export class EmailSyncCronService implements OnModuleDestroy {
   /** Intervalo de sincronización (leído de env, usado en logs). */
   private readonly intervalMinutes: number;
 
+  /** Clave para descifrar las contraseñas IMAP en memoria. */
+  private readonly encryptionKey: string;
+
   constructor(
     @Inject(IMAP_CLIENT_PORT)
     private readonly imapClient: ImapClientPort,
+
+    @Inject(MICROSERVICE_TOKENS.MS_CORE_CLIENT)
+    private readonly msCoreClient: ClientProxy,
 
     private readonly emailProcessor: EmailProcessorService,
     configService: ConfigService,
@@ -49,9 +63,10 @@ export class EmailSyncCronService implements OnModuleDestroy {
     this.intervalMinutes = configService.getOrThrow<number>(
       'SYNC_INTERVAL_MINUTES',
     );
+    this.encryptionKey = configService.getOrThrow<string>('ENCRYPTION_KEY');
 
     this.logger.log(
-      `📅 Polling IMAP configurado cada ${this.intervalMinutes} minuto(s)`,
+      `📅 Polling IMAP multiusuario configurado cada ${this.intervalMinutes} minuto(s)`,
     );
   }
 
@@ -89,36 +104,76 @@ export class EmailSyncCronService implements OnModuleDestroy {
 
     this.isSyncing = true;
     const startTime = Date.now();
-
-    this.logger.log('🔄 Iniciando ciclo de sincronización IMAP...');
+    this.logger.log('🔄 Iniciando ciclo de sincronización IMAP (multiusuario)...');
 
     try {
-      // ── 1. Extraer correos del buzón ────────────────────────────────────
-      const emails = await this.imapClient.fetchUnseenWithAttachments();
-
-      if (emails.length === 0) {
-        this.logger.debug('Sin correos nuevos con adjuntos relevantes.');
+      // ── 1. Consultar a ms-core las configs IMAP activas ─────────────────
+      const configs = await this.fetchActiveConfigs();
+      if (configs.length === 0) {
+        this.logger.debug('Sin configuraciones IMAP activas. Nada que escanear.');
         return;
       }
 
-      // ── 2. Procesar y emitir eventos a ms-core ─────────────────────────
-      const result = await this.emailProcessor.processEmails(emails);
+      let totalEmitted = 0;
+
+      // ── 2. Escanear el INBOX de CADA usuario por separado ───────────────
+      for (const cfg of configs) {
+        try {
+          // Descifrar la contraseña EN MEMORIA (nunca se persiste en claro).
+          const password = decryptSecret(cfg.passwordEncrypted, this.encryptionKey);
+
+          const emails = await this.imapClient.fetchUnseenWithAttachments({
+            host: cfg.host,
+            port: cfg.port,
+            email: cfg.email,
+            password,
+            tls: cfg.tls,
+          });
+
+          if (emails.length === 0) continue;
+
+          // Inyecta el userId (dueño) en cada evento DOCUMENT_RECEIVED.
+          const result = await this.emailProcessor.processEmails(
+            emails,
+            cfg.ownerId,
+          );
+          totalEmitted += result.eventsEmitted;
+          this.logger.log(
+            `📬 ${cfg.email}: ${result.totalAttachments} adjuntos, ${result.eventsEmitted} eventos`,
+          );
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          this.logger.error(`❌ Error con la cuenta ${cfg.email}: ${msg}`);
+          // Un fallo en una cuenta no detiene las demás.
+        }
+      }
 
       const elapsed = Date.now() - startTime;
       this.logger.log(
-        `✅ Ciclo completado en ${elapsed}ms — ` +
-        `${result.totalEmails} correos, ` +
-        `${result.totalAttachments} adjuntos, ` +
-        `${result.eventsEmitted} eventos emitidos, ` +
-        `${result.eventsFailed} fallidos`,
+        `✅ Ciclo completado en ${elapsed}ms — ${configs.length} cuenta(s), ${totalEmitted} eventos emitidos`,
       );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ Error en ciclo IMAP: ${errorMsg}`);
-      // No re-lanzamos: el cron debe seguir intentando en el próximo ciclo.
     } finally {
       this.isSyncing = false;
     }
+  }
+
+  /** Pide a ms-core las configuraciones IMAP activas (password cifrado). */
+  private async fetchActiveConfigs(): Promise<IImapActiveConfig[]> {
+    return firstValueFrom(
+      this.msCoreClient
+        .send<IImapActiveConfig[]>(IMAP_PATTERNS.LIST_ACTIVE, {
+          data: {},
+          metadata: {
+            correlationId: `sync-${Date.now()}`,
+            userId: 'ms-sync',
+            timestamp: new Date().toISOString(),
+          },
+        })
+        .pipe(timeout(10_000)),
+    );
   }
 
   onModuleDestroy(): void {

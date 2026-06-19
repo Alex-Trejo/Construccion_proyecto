@@ -84,6 +84,14 @@ export const IDENTITY_PATTERNS = {
   DELETE_ROLE: 'CORE_IDENTITY_DELETE_ROLE',
 } as const;
 
+/** Patrones de mensajería para configuración IMAP por usuario (ms-core). */
+export const IMAP_PATTERNS = {
+  /** Guarda/actualiza la config IMAP del usuario (password cifrado). */
+  SAVE_CONFIG: 'CORE_IMAP_SAVE_CONFIG',
+  /** Lista las configs IMAP activas (para ms-sync; password cifrado). */
+  LIST_ACTIVE: 'CORE_IMAP_LIST_ACTIVE',
+} as const;
+
 /** Tokens de inyección para ClientProxy de NestJS microservices. */
 export const MICROSERVICE_TOKENS = {
   /** Token para inyectar el ClientProxy hacia ms-core. */

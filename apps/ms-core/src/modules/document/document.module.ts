@@ -53,6 +53,10 @@ import {
   FindDocumentByIdUseCase,
   GetDocumentPreviewUseCase,
 } from './application/use-cases/find-documents.use-case';
+import {
+  DashboardMetricsUseCase,
+  ExportDocumentsUseCase,
+} from './application/use-cases/reports.use-cases';
 import { DocumentTcpController } from './presentation/document-tcp.controller';
 
 import { SupplierModule } from '../supplier/supplier.module';
@@ -121,6 +125,8 @@ import { SupplierModule } from '../supplier/supplier.module';
     FindDocumentsUseCase,
     FindDocumentByIdUseCase,
     GetDocumentPreviewUseCase,
+    DashboardMetricsUseCase,
+    ExportDocumentsUseCase,
   ],
   exports: [
     FetchAndSanitizeXmlUseCase,

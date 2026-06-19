@@ -35,6 +35,9 @@ import { RolOrmEntity } from '../modules/identity/infrastructure/persistence/rol
 import { PersonaOrmEntity } from '../modules/identity/infrastructure/persistence/persona.orm-entity';
 import { UsuarioOrmEntity } from '../modules/identity/infrastructure/persistence/usuario.orm-entity';
 
+// ── IMAP config entities ──────────────────────────────────────────────────────
+import { ImapConfigOrmEntity } from '../modules/imap-config/infrastructure/persistence/imap-config.orm-entity';
+
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
@@ -61,6 +64,8 @@ import { UsuarioOrmEntity } from '../modules/identity/infrastructure/persistence
           DocumentOrmEntity,
           DocumentItemOrmEntity,
           DocumentTaxOrmEntity,
+          // IMAP
+          ImapConfigOrmEntity,
           // Identity (Shadow Tables de Keycloak — Rúbrica 3.1)
           RolOrmEntity,
           PersonaOrmEntity,

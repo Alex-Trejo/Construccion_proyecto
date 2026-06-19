@@ -46,16 +46,28 @@ export interface ProcessedEmail {
   readonly attachments: ReadonlyArray<EmailAttachment>;
 }
 
+/** Credenciales de una cuenta IMAP concreta (multi-tenant). */
+export interface ImapAccountConfig {
+  readonly host: string;
+  readonly port: number;
+  readonly email: string;
+  readonly password: string;
+  readonly tls: boolean;
+}
+
 /** Contrato para el cliente IMAP. */
 export interface ImapClientPort {
   /**
-   * Conecta al servidor IMAP, busca correos UNSEEN con adjuntos
+   * Conecta a la cuenta IMAP indicada, busca correos UNSEEN con adjuntos
    * XML/PDF, los extrae y marca los correos como SEEN.
    *
+   * @param account - Credenciales de la cuenta a escanear.
    * @returns Array de correos procesados con sus adjuntos.
    * @throws {Error} Si la conexión IMAP falla.
    */
-  fetchUnseenWithAttachments(): Promise<ReadonlyArray<ProcessedEmail>>;
+  fetchUnseenWithAttachments(
+    account: ImapAccountConfig,
+  ): Promise<ReadonlyArray<ProcessedEmail>>;
 }
 
 export const IMAP_CLIENT_PORT = Symbol('IMAP_CLIENT_PORT');

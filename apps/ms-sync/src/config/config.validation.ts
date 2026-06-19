@@ -19,34 +19,27 @@ export const configValidationSchema = Joi.object({
     .valid('development', 'production', 'test')
     .required(),
 
-  // ── IMAP (Conexión al buzón de correo) ─────────────────────────────────────
-  IMAP_HOST: Joi.string()
-    .min(1)
-    .required()
-    .messages({ 'any.required': 'IMAP_HOST es obligatorio. Ej: imap.gmail.com' }),
-
-  IMAP_PORT: Joi.number()
-    .port()
-    .required()
-    .messages({ 'any.required': 'IMAP_PORT es obligatorio. Ej: 993' }),
-
-  IMAP_USER: Joi.string()
-    .email()
-    .required()
-    .messages({ 'any.required': 'IMAP_USER es obligatorio. Ej: bot@empresa.com' }),
-
-  IMAP_PASSWORD: Joi.string()
-    .min(1)
+  // ── IMAP por usuario (multi-tenant) ────────────────────────────────────────
+  // Las credenciales IMAP ya NO vienen del env: cada usuario configura su
+  // correo vía POST /user/imap-config y se guardan CIFRADAS en Postgres.
+  // ms-sync las consulta a ms-core y las descifra con ENCRYPTION_KEY.
+  ENCRYPTION_KEY: Joi.string()
+    .length(64)
+    .hex()
     .required()
     .messages({
-      'any.required': 'IMAP_PASSWORD es obligatorio. Usa un App Password de Gmail, no la contraseña normal.',
+      'any.required': 'ENCRYPTION_KEY es obligatorio (64 hex = 32 bytes).',
+      'string.length': 'ENCRYPTION_KEY debe tener 64 caracteres hex.',
     }),
 
-  IMAP_TLS: Joi.boolean()
-    .required()
-    .messages({ 'any.required': 'IMAP_TLS es obligatorio. Ej: true' }),
+  // Credenciales IMAP de env (LEGADO / opcional; el flujo real es multiusuario).
+  IMAP_HOST: Joi.string().optional(),
+  IMAP_PORT: Joi.number().port().optional(),
+  IMAP_USER: Joi.string().optional(),
+  IMAP_PASSWORD: Joi.string().optional(),
+  IMAP_TLS: Joi.boolean().optional(),
 
-  // ── ms-core TCP (Destino de eventos) ───────────────────────────────────────
+  // ── ms-core TCP (eventos + consulta de configs IMAP) ───────────────────────
   MS_CORE_TCP_HOST: Joi.string().hostname().required(),
   MS_CORE_TCP_PORT: Joi.number().port().required(),
 

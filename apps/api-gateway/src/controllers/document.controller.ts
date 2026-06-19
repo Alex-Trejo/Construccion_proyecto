@@ -20,6 +20,7 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -27,6 +28,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { Workbook } from 'exceljs';
+import type { Response } from 'express';
 import { firstValueFrom, timeout } from 'rxjs';
 import {
   DOCUMENT_PATTERNS,
@@ -151,6 +154,50 @@ export class DocumentController {
         .send<IPaginatedDocuments>(DOCUMENT_PATTERNS.FIND_ALL, payload)
         .pipe(timeout(TCP_TIMEOUT_MS)),
     );
+  }
+
+  /** GET /documents/export — descarga XLSX de los comprobantes del usuario. */
+  @Get('export')
+  async export(
+    @CurrentUser() user: AuthenticatedUser,
+    @Res() res: Response,
+  ): Promise<void> {
+    const payload: TcpPayload<Record<string, never>> = {
+      data: {},
+      metadata: buildTcpMetadata(user),
+    };
+    const rows = await firstValueFrom(
+      this.msCore
+        .send<IDocumentDto[]>(DOCUMENT_PATTERNS.EXPORT, payload)
+        .pipe(timeout(20_000)),
+    );
+
+    const wb = new Workbook();
+    const ws = wb.addWorksheet('Comprobantes');
+    ws.columns = [
+      { header: 'Tipo', key: 'documentType', width: 16 },
+      { header: 'RUC Emisor', key: 'rucEmisor', width: 16 },
+      { header: 'Razón Social', key: 'razonSocialEmisor', width: 32 },
+      { header: 'N° Factura', key: 'numeroFactura', width: 20 },
+      { header: 'Fecha', key: 'fechaEmision', width: 14 },
+      { header: 'Subtotal', key: 'subtotal', width: 12 },
+      { header: 'IVA', key: 'iva', width: 12 },
+      { header: 'Total', key: 'total', width: 12 },
+      { header: 'Estado', key: 'estado', width: 16 },
+    ];
+    ws.getRow(1).font = { bold: true };
+    rows.forEach((r) => ws.addRow(r));
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="comprobantes.xlsx"',
+    );
+    await wb.xlsx.write(res);
+    res.end();
   }
 
   /** GET /documents/:id — detalle con items e impuestos. */

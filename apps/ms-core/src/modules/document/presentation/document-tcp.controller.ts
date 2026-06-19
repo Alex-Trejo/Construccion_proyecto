@@ -12,6 +12,7 @@ import { MessagePattern } from '@nestjs/microservices';
 import {
   DOCUMENT_PATTERNS,
   type ICreateDocumentDto,
+  type IDashboardMetrics,
   type IDocumentDto,
   type IOcrResultDto,
   type IPaginatedDocuments,
@@ -26,6 +27,10 @@ import {
   GetDocumentPreviewUseCase,
 } from '../application/use-cases/find-documents.use-case';
 import { ProcessTxtBatchUseCase } from '../application/use-cases/process-txt-batch.use-case';
+import {
+  DashboardMetricsUseCase,
+  ExportDocumentsUseCase,
+} from '../application/use-cases/reports.use-cases';
 
 interface PhysicalPayload {
   readonly contentBase64: string;
@@ -44,6 +49,8 @@ export class DocumentTcpController {
     private readonly findById: FindDocumentByIdUseCase,
     private readonly getPreview: GetDocumentPreviewUseCase,
     private readonly processTxtBatch: ProcessTxtBatchUseCase,
+    private readonly dashboardMetrics: DashboardMetricsUseCase,
+    private readonly exportDocuments: ExportDocumentsUseCase,
   ) {}
 
   @MessagePattern(DOCUMENT_PATTERNS.PROCESS_PHYSICAL)
@@ -92,5 +99,19 @@ export class DocumentTcpController {
   async bulkTxt(payload: TcpPayload<{ txtContent: string }>) {
     this.logger.debug('TCP UPLOAD_BATCH_TXT');
     return this.processTxtBatch.execute(payload.data.txtContent);
+  }
+
+  @MessagePattern(DOCUMENT_PATTERNS.METRICS)
+  async metrics(
+    payload: TcpPayload<Record<string, never>>,
+  ): Promise<IDashboardMetrics> {
+    return this.dashboardMetrics.execute(payload.metadata.userId);
+  }
+
+  @MessagePattern(DOCUMENT_PATTERNS.EXPORT)
+  async exportRows(
+    payload: TcpPayload<Record<string, never>>,
+  ): Promise<IDocumentDto[]> {
+    return this.exportDocuments.execute(payload.metadata.userId);
   }
 }
