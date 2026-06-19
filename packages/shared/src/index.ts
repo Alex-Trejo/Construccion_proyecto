@@ -47,6 +47,14 @@ export type {
 
 export type { IUploadDocumentDto } from './dtos/upload-document.dto';
 
+export type {
+  IUserDto,
+  ICreateUserDto,
+  IAssignRolesDto,
+  IRoleDto,
+  ICreateRoleDto,
+} from './dtos/user.dto';
+
 // ── Constants ────────────────────────────────────────────────────────────────
 export {
   SUPPLIER_PATTERNS,

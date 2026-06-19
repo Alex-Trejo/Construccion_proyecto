@@ -68,6 +68,10 @@ export const COMMUNICATION_PATTERNS = {
 export const IDENTITY_PATTERNS = {
   /** Sincroniza (upsert) un usuario de Keycloak en las shadow tables. */
   SYNC_USER: 'CORE_IDENTITY_SYNC_USER',
+  /** Espeja (upsert) un rol de realm de Keycloak en la tabla roles. */
+  UPSERT_ROLE: 'CORE_IDENTITY_UPSERT_ROLE',
+  /** Marca como inactivo un rol espejado al borrarse en Keycloak. */
+  DELETE_ROLE: 'CORE_IDENTITY_DELETE_ROLE',
 } as const;
 
 /** Tokens de inyección para ClientProxy de NestJS microservices. */

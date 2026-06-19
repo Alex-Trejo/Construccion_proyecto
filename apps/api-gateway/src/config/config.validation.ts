@@ -36,6 +36,10 @@ export const configValidationSchema = Joi.object({
   KEYCLOAK_CLIENT_ID: Joi.string().min(1).required(),
   KEYCLOAK_CLIENT_SECRET: Joi.string().min(1).required(),
 
+  // Admin de Keycloak (para gestionar usuarios/roles vía Admin REST API)
+  KEYCLOAK_ADMIN_USER: Joi.string().min(1).required(),
+  KEYCLOAK_ADMIN_PASSWORD: Joi.string().min(1).required(),
+
   // ── ms-core TCP ────────────────────────────────────────────────────────────
   MS_CORE_TCP_HOST: Joi.string().hostname().required(),
   MS_CORE_TCP_PORT: Joi.number().port().required(),

@@ -24,7 +24,10 @@ import { AuthModule } from './auth/auth.module';
 import { CommunicationController } from './controllers/communication.controller';
 import { SupplierController } from './controllers/supplier.controller';
 import { HealthController } from './controllers/health.controller';
+import { UserController } from './controllers/user.controller';
+import { RoleController } from './controllers/role.controller';
 import { IdentitySyncInterceptor } from './auth/identity-sync.interceptor';
+import { KeycloakAdminService } from './keycloak/keycloak-admin.service';
 
 @Module({
   imports: [
@@ -70,8 +73,15 @@ import { IdentitySyncInterceptor } from './auth/identity-sync.interceptor';
     // ── Métricas Prometheus (expone /api/v1/metrics) ─────────────────────
     PrometheusModule.register(),
   ],
-  controllers: [HealthController, CommunicationController, SupplierController],
+  controllers: [
+    HealthController,
+    CommunicationController,
+    SupplierController,
+    UserController,
+    RoleController,
+  ],
   providers: [
+    KeycloakAdminService,
     {
       provide: APP_INTERCEPTOR,
       useClass: IdentitySyncInterceptor,

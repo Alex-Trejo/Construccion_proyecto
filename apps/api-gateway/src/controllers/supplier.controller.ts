@@ -23,23 +23,26 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
-import { randomUUID } from 'node:crypto';
 import {
   MICROSERVICE_TOKENS,
   SUPPLIER_PATTERNS,
   type ICreateSupplierDto,
   type ISupplier,
   type TcpPayload,
-  type TcpRequestMetadata,
 } from '@sgc/shared';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { buildTcpMetadata } from '../auth/tcp-metadata';
+import type { AuthenticatedUser } from '../auth/keycloak-jwt.strategy';
 
 /** Timeout para llamadas TCP al ms-core (ms). */
 const TCP_TIMEOUT_MS = 10_000;
 
 @Controller('suppliers')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class SupplierController {
   private readonly logger = new Logger(SupplierController.name);
 
@@ -48,22 +51,18 @@ export class SupplierController {
     private readonly msCoreClient: ClientProxy,
   ) {}
 
-  private buildMetadata(): TcpRequestMetadata {
-    return {
-      correlationId: randomUUID(),
-      userId: 'anonymous',
-      timestamp: new Date().toISOString(),
-    };
-  }
-
   /** POST /suppliers — crea un proveedor vía Factory Method en ms-core. */
   @Post()
-  async create(@Body() dto: ICreateSupplierDto): Promise<ISupplier> {
+  @Roles('Administrador', 'Contador')
+  async create(
+    @Body() dto: ICreateSupplierDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ISupplier> {
     this.logger.debug(`POST /suppliers (${dto.supplierType} / ${dto.taxId})`);
 
     const payload: TcpPayload<ICreateSupplierDto> = {
       data: dto,
-      metadata: this.buildMetadata(),
+      metadata: buildTcpMetadata(user),
     };
 
     return firstValueFrom(
@@ -73,14 +72,16 @@ export class SupplierController {
     );
   }
 
-  /** GET /suppliers — lista proveedores activos. */
+  /** GET /suppliers — lista proveedores del usuario autenticado. */
   @Get()
-  async findAll(): Promise<ReadonlyArray<ISupplier>> {
+  async findAll(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ReadonlyArray<ISupplier>> {
     this.logger.debug('GET /suppliers');
 
     const payload: TcpPayload<Record<string, never>> = {
       data: {},
-      metadata: this.buildMetadata(),
+      metadata: buildTcpMetadata(user),
     };
 
     return firstValueFrom(
