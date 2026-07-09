@@ -10,16 +10,19 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/Button';
+import { LanguageToggle } from '@/components/LanguageToggle';
+import { useTranslation } from '@/lib/i18n/language-provider';
 
 const LINKS = [
-  { href: '/dashboard', label: 'Overview' },
-  { href: '/dashboard/suppliers', label: 'Suppliers' },
-  { href: '/dashboard/communications', label: 'Communications' },
+  { href: '/dashboard', key: 'nav.overview' },
+  { href: '/dashboard/suppliers', key: 'nav.suppliers' },
+  { href: '/dashboard/communications', key: 'nav.communications' },
 ] as const;
 
 export function DashboardNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { t } = useTranslation();
 
   return (
     <nav className="sticky top-0 z-10 border-b-2 border-black bg-white">
@@ -47,21 +50,22 @@ export function DashboardNav() {
                     : 'border-transparent hover:border-black'
                 }`}
               >
-                {link.label}
+                {t(link.key)}
               </Link>
             );
           })}
         </div>
 
         <div className="flex items-center gap-3">
+          <LanguageToggle />
           <span className="hidden text-sm font-medium text-dark/70 sm:inline">
-            {session?.user?.name ?? session?.user?.email ?? 'User'}
+            {session?.user?.name ?? session?.user?.email ?? t('nav.user')}
           </span>
           <Button
             variant="secondary"
             onClick={() => void signOut({ callbackUrl: '/' })}
           >
-            Sign out
+            {t('nav.signOut')}
           </Button>
         </div>
       </div>

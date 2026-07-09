@@ -18,6 +18,10 @@ import {
 } from '@sgc/shared';
 import { useApi } from '@/lib/api-client';
 import { Button } from '@/components/ui/Button';
+import { useTranslation } from '@/lib/i18n/language-provider';
+
+/** Función traductora provista por el provider i18n. */
+type Translate = (key: string, vars?: Record<string, string | number>) => string;
 
 /** Tipo de documento de identificación tributaria. */
 type DocumentType = 'CEDULA' | 'RUC';
@@ -67,29 +71,32 @@ function onlyDigits(value: string): string {
 
 /**
  * Valida los campos numéricos antes de enviar (PC-002).
- * Retorna un mensaje de error legible o `null` si todo es válido.
+ * Retorna un mensaje de error traducido o `null` si todo es válido.
  */
-function validateNumericFields(form: FormState): string | null {
+function validateNumericFields(form: FormState, t: Translate): string | null {
   const taxId = form.taxId.trim();
   if (!/^\d+$/.test(taxId)) {
-    return 'El RUC/Cédula solo puede contener números.';
+    return t('suppliers.err.taxIdNumeric');
   }
   const expectedLength = DOC_LENGTH[form.documentType];
   if (taxId.length !== expectedLength) {
-    const docLabel = form.documentType === 'CEDULA' ? 'Cédula' : 'RUC';
-    return `El ${docLabel} debe tener exactamente ${expectedLength} dígitos.`;
+    const docLabel =
+      form.documentType === 'CEDULA'
+        ? t('suppliers.doc.cedula')
+        : t('suppliers.doc.ruc');
+    return t('suppliers.err.taxIdLength', { doc: docLabel, n: expectedLength });
   }
 
   if (form.supplierType === SupplierType.PERSONA_NATURAL) {
     const cedula = form.cedula.trim();
     if (!/^\d{10}$/.test(cedula)) {
-      return 'La Cédula debe contener exactamente 10 dígitos numéricos.';
+      return t('suppliers.err.cedula');
     }
   }
 
   const phone = form.phone.trim();
   if (phone !== '' && !/^\d{7,10}$/.test(phone)) {
-    return 'El Teléfono solo puede contener números (7 a 10 dígitos).';
+    return t('suppliers.err.phone');
   }
 
   return null;
@@ -130,6 +137,7 @@ function displayName(s: ISupplier): string {
 
 export default function SuppliersPage() {
   const { apiGet, apiPost } = useApi();
+  const { t } = useTranslation();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [suppliers, setSuppliers] = useState<ReadonlyArray<ISupplier>>([]);
   const [loading, setLoading] = useState(false);
@@ -162,7 +170,7 @@ export default function SuppliersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const validationError = validateNumericFields(form);
+    const validationError = validateNumericFields(form, t);
     if (validationError) {
       setMessage({ ok: false, text: `❌ ${validationError}` });
       return;
@@ -173,7 +181,10 @@ export default function SuppliersPage() {
       const created = await apiPost<ISupplier>('/suppliers', buildDto(form));
       setMessage({
         ok: true,
-        text: `✅ Created: ${displayName(created)} — code ${created.supplierCode}`,
+        text: t('suppliers.created', {
+          name: displayName(created),
+          code: created.supplierCode,
+        }),
       });
       setForm(EMPTY_FORM);
       await loadSuppliers();
@@ -181,7 +192,7 @@ export default function SuppliersPage() {
       const text =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message: unknown }).message)
-          : 'Unexpected error';
+          : t('suppliers.unexpectedError');
       setMessage({ ok: false, text: `❌ ${text}` });
     } finally {
       setSubmitting(false);
@@ -191,15 +202,17 @@ export default function SuppliersPage() {
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
-        <span className="brutal-badge w-fit bg-primary">Suppliers</span>
-        <h1 className="text-3xl font-bold">Register a supplier</h1>
+        <span className="brutal-badge w-fit bg-primary">
+          {t('suppliers.badge')}
+        </span>
+        <h1 className="text-3xl font-bold">{t('suppliers.title')}</h1>
       </header>
 
       <div className="grid gap-8 lg:grid-cols-2">
         {/* ── Form ───────────────────────────────────────────────────────── */}
         <form onSubmit={handleSubmit} className="brutal-card bg-white p-8">
           <div className="flex flex-col gap-4">
-            <Field label="Supplier type">
+            <Field label={t('suppliers.supplierType')}>
               <select
                 className="brutal-select"
                 value={form.supplierType}
@@ -208,15 +221,15 @@ export default function SuppliersPage() {
                 }
               >
                 <option value={SupplierType.PERSONA_JURIDICA}>
-                  Persona Jurídica (company)
+                  {t('suppliers.opt.juridica')}
                 </option>
                 <option value={SupplierType.PERSONA_NATURAL}>
-                  Persona Natural (individual)
+                  {t('suppliers.opt.natural')}
                 </option>
               </select>
             </Field>
 
-            <Field label="Tipo de documento">
+            <Field label={t('suppliers.documentType')}>
               <select
                 className="brutal-select"
                 value={form.documentType}
@@ -224,12 +237,12 @@ export default function SuppliersPage() {
                   update('documentType', e.target.value as DocumentType)
                 }
               >
-                <option value="CEDULA">Cédula (10 dígitos)</option>
-                <option value="RUC">RUC (13 dígitos)</option>
+                <option value="CEDULA">{t('suppliers.opt.cedula')}</option>
+                <option value="RUC">{t('suppliers.opt.ruc')}</option>
               </select>
             </Field>
 
-            <Field label="RUC / Cédula (taxId)">
+            <Field label={t('suppliers.taxId')}>
               <input
                 className="brutal-input"
                 value={form.taxId}
@@ -246,7 +259,7 @@ export default function SuppliersPage() {
 
             {isNatural ? (
               <>
-                <Field label="First name">
+                <Field label={t('suppliers.firstName')}>
                   <input
                     className="brutal-input"
                     value={form.firstName}
@@ -254,7 +267,7 @@ export default function SuppliersPage() {
                     required
                   />
                 </Field>
-                <Field label="Last name">
+                <Field label={t('suppliers.lastName')}>
                   <input
                     className="brutal-input"
                     value={form.lastName}
@@ -262,7 +275,7 @@ export default function SuppliersPage() {
                     required
                   />
                 </Field>
-                <Field label="Cédula">
+                <Field label={t('suppliers.cedula')}>
                   <input
                     className="brutal-input"
                     value={form.cedula}
@@ -277,7 +290,7 @@ export default function SuppliersPage() {
               </>
             ) : (
               <>
-                <Field label="Business name">
+                <Field label={t('suppliers.businessName')}>
                   <input
                     className="brutal-input"
                     value={form.businessName}
@@ -285,7 +298,7 @@ export default function SuppliersPage() {
                     required
                   />
                 </Field>
-                <Field label="Trade name">
+                <Field label={t('suppliers.tradeName')}>
                   <input
                     className="brutal-input"
                     value={form.tradeName}
@@ -293,7 +306,7 @@ export default function SuppliersPage() {
                     required
                   />
                 </Field>
-                <Field label="Legal representative">
+                <Field label={t('suppliers.legalRep')}>
                   <input
                     className="brutal-input"
                     value={form.legalRepresentative}
@@ -306,7 +319,7 @@ export default function SuppliersPage() {
               </>
             )}
 
-            <Field label="Email">
+            <Field label={t('suppliers.email')}>
               <input
                 type="email"
                 className="brutal-input"
@@ -314,7 +327,7 @@ export default function SuppliersPage() {
                 onChange={(e) => update('email', e.target.value)}
               />
             </Field>
-            <Field label="Phone">
+            <Field label={t('suppliers.phone')}>
               <input
                 className="brutal-input"
                 value={form.phone}
@@ -324,7 +337,7 @@ export default function SuppliersPage() {
                 maxLength={10}
               />
             </Field>
-            <Field label="Address">
+            <Field label={t('suppliers.address')}>
               <input
                 className="brutal-input"
                 value={form.address}
@@ -333,7 +346,7 @@ export default function SuppliersPage() {
             </Field>
 
             <Button type="submit" variant="primary" disabled={submitting}>
-              {submitting ? 'Creating…' : 'Create supplier'}
+              {submitting ? t('suppliers.creating') : t('suppliers.create')}
             </Button>
 
             {message && (
@@ -350,12 +363,12 @@ export default function SuppliersPage() {
 
         {/* ── List ───────────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-4">
-          <h2 className="text-xl font-bold">Registered suppliers</h2>
+          <h2 className="text-xl font-bold">{t('suppliers.listTitle')}</h2>
           {loading ? (
-            <p className="text-dark/60">Loading…</p>
+            <p className="text-dark/60">{t('suppliers.loading')}</p>
           ) : suppliers.length === 0 ? (
             <div className="brutal-card-sm bg-white p-6 text-dark/60">
-              No suppliers yet.
+              {t('suppliers.empty')}
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -369,7 +382,9 @@ export default function SuppliersPage() {
                         : 'JUR'}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-dark/60">RUC: {s.taxId}</p>
+                  <p className="mt-1 text-sm text-dark/60">
+                    {t('suppliers.rucLabel')} {s.taxId}
+                  </p>
                   <p className="text-sm font-mono text-dark/80">
                     {s.supplierCode}
                   </p>
