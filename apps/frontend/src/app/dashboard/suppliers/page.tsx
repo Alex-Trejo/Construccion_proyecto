@@ -19,8 +19,18 @@ import {
 import { useApi } from '@/lib/api-client';
 import { Button } from '@/components/ui/Button';
 
+/** Tipo de documento de identificación tributaria. */
+type DocumentType = 'CEDULA' | 'RUC';
+
+/** Longitud exacta de dígitos por tipo de documento (SRI Ecuador). */
+const DOC_LENGTH: Record<DocumentType, number> = {
+  CEDULA: 10,
+  RUC: 13,
+};
+
 interface FormState {
   supplierType: SupplierType;
+  documentType: DocumentType;
   taxId: string;
   email: string;
   phone: string;
@@ -37,6 +47,7 @@ interface FormState {
 
 const EMPTY_FORM: FormState = {
   supplierType: SupplierType.PERSONA_JURIDICA,
+  documentType: 'RUC',
   taxId: '',
   email: '',
   phone: '',
@@ -63,8 +74,10 @@ function validateNumericFields(form: FormState): string | null {
   if (!/^\d+$/.test(taxId)) {
     return 'El RUC/Cédula solo puede contener números.';
   }
-  if (taxId.length !== 10 && taxId.length !== 13) {
-    return 'El RUC/Cédula debe tener 10 dígitos (cédula) o 13 dígitos (RUC).';
+  const expectedLength = DOC_LENGTH[form.documentType];
+  if (taxId.length !== expectedLength) {
+    const docLabel = form.documentType === 'CEDULA' ? 'Cédula' : 'RUC';
+    return `El ${docLabel} debe tener exactamente ${expectedLength} dígitos.`;
   }
 
   if (form.supplierType === SupplierType.PERSONA_NATURAL) {
@@ -203,6 +216,19 @@ export default function SuppliersPage() {
               </select>
             </Field>
 
+            <Field label="Tipo de documento">
+              <select
+                className="brutal-select"
+                value={form.documentType}
+                onChange={(e) =>
+                  update('documentType', e.target.value as DocumentType)
+                }
+              >
+                <option value="CEDULA">Cédula (10 dígitos)</option>
+                <option value="RUC">RUC (13 dígitos)</option>
+              </select>
+            </Field>
+
             <Field label="RUC / Cédula (taxId)">
               <input
                 className="brutal-input"
@@ -210,8 +236,10 @@ export default function SuppliersPage() {
                 onChange={(e) => update('taxId', onlyDigits(e.target.value))}
                 inputMode="numeric"
                 pattern="\d*"
-                maxLength={13}
-                placeholder="1790012345001"
+                maxLength={DOC_LENGTH[form.documentType]}
+                placeholder={
+                  form.documentType === 'CEDULA' ? '1710034065' : '1790012345001'
+                }
                 required
               />
             </Field>
