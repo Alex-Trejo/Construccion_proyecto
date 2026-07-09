@@ -49,6 +49,39 @@ const EMPTY_FORM: FormState = {
   legalRepresentative: '',
 };
 
+/** Elimina cualquier carácter no numérico (usado en RUC/Cédula y Teléfono). */
+function onlyDigits(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+/**
+ * Valida los campos numéricos antes de enviar (PC-002).
+ * Retorna un mensaje de error legible o `null` si todo es válido.
+ */
+function validateNumericFields(form: FormState): string | null {
+  const taxId = form.taxId.trim();
+  if (!/^\d+$/.test(taxId)) {
+    return 'El RUC/Cédula solo puede contener números.';
+  }
+  if (taxId.length !== 10 && taxId.length !== 13) {
+    return 'El RUC/Cédula debe tener 10 dígitos (cédula) o 13 dígitos (RUC).';
+  }
+
+  if (form.supplierType === SupplierType.PERSONA_NATURAL) {
+    const cedula = form.cedula.trim();
+    if (!/^\d{10}$/.test(cedula)) {
+      return 'La Cédula debe contener exactamente 10 dígitos numéricos.';
+    }
+  }
+
+  const phone = form.phone.trim();
+  if (phone !== '' && !/^\d{7,10}$/.test(phone)) {
+    return 'El Teléfono solo puede contener números (7 a 10 dígitos).';
+  }
+
+  return null;
+}
+
 function buildDto(form: FormState): ICreateSupplierDto {
   const base = {
     taxId: form.taxId.trim(),
@@ -116,6 +149,11 @@ export default function SuppliersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validationError = validateNumericFields(form);
+    if (validationError) {
+      setMessage({ ok: false, text: `❌ ${validationError}` });
+      return;
+    }
     setSubmitting(true);
     setMessage(null);
     try {
@@ -169,7 +207,10 @@ export default function SuppliersPage() {
               <input
                 className="brutal-input"
                 value={form.taxId}
-                onChange={(e) => update('taxId', e.target.value)}
+                onChange={(e) => update('taxId', onlyDigits(e.target.value))}
+                inputMode="numeric"
+                pattern="\d*"
+                maxLength={13}
                 placeholder="1790012345001"
                 required
               />
@@ -197,7 +238,10 @@ export default function SuppliersPage() {
                   <input
                     className="brutal-input"
                     value={form.cedula}
-                    onChange={(e) => update('cedula', e.target.value)}
+                    onChange={(e) => update('cedula', onlyDigits(e.target.value))}
+                    inputMode="numeric"
+                    pattern="\d*"
+                    maxLength={10}
                     placeholder="1710034065"
                     required
                   />
@@ -246,7 +290,10 @@ export default function SuppliersPage() {
               <input
                 className="brutal-input"
                 value={form.phone}
-                onChange={(e) => update('phone', e.target.value)}
+                onChange={(e) => update('phone', onlyDigits(e.target.value))}
+                inputMode="numeric"
+                pattern="\d*"
+                maxLength={10}
               />
             </Field>
             <Field label="Address">
