@@ -11,6 +11,8 @@
  * @module Ruc
  */
 
+import { DomainValidationError } from '../errors/domain-validation.error';
+
 export class Ruc {
   private readonly _value: string;
 
@@ -29,21 +31,21 @@ export class Ruc {
     const sanitized = value.trim();
 
     if (!/^\d{10}$|^\d{13}$/.test(sanitized)) {
-      throw new Error(
+      throw new DomainValidationError(
         `RUC/Cédula inválido: "${sanitized}". Debe contener 10 dígitos (cédula) o 13 dígitos (RUC).`,
       );
     }
 
     // Validación del dígito verificador (módulo 10 para los primeros 10 dígitos)
     if (!Ruc.isValidCheckDigit(sanitized.substring(0, 10))) {
-      throw new Error(
+      throw new DomainValidationError(
         `RUC/Cédula inválido: "${sanitized}". El dígito verificador no es correcto.`,
       );
     }
 
     // Si es RUC (13 dígitos), los últimos 3 deben ser "001"
     if (sanitized.length === 13 && !sanitized.endsWith('001')) {
-      throw new Error(
+      throw new DomainValidationError(
         `RUC inválido: "${sanitized}". Un RUC debe terminar en "001".`,
       );
     }

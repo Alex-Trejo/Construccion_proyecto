@@ -32,6 +32,7 @@ import { PersonaNaturalSupplier } from '../entities/persona-natural-supplier.ent
 import { PersonaJuridicaSupplier } from '../entities/persona-juridica-supplier.entity';
 import { Ruc } from '../value-objects/ruc.vo';
 import { SupplierCode } from '../value-objects/supplier-code.vo';
+import { DomainValidationError } from '../errors/domain-validation.error';
 
 export class SupplierFactory {
   /**
@@ -103,7 +104,7 @@ export class SupplierFactory {
       return;
     }
     if (!/^\d{7,10}$/.test(sanitized)) {
-      throw new Error(
+      throw new DomainValidationError(
         `Teléfono inválido: "${sanitized}". Debe contener solo números (7 a 10 dígitos).`,
       );
     }
@@ -121,7 +122,7 @@ export class SupplierFactory {
     // Reutiliza la validación numérica + dígito verificador del VO Ruc.
     const cedulaVo = Ruc.create(dto.cedula);
     if (!cedulaVo.isCedula) {
-      throw new Error(
+      throw new DomainValidationError(
         `Cédula inválida: "${dto.cedula}". Debe contener exactamente 10 dígitos numéricos.`,
       );
     }

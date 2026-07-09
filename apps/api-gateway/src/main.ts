@@ -17,6 +17,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
 import { createAppLogger } from './observability/loki-logger';
+import { RpcHttpExceptionFilter } from './filters/rpc-http-exception.filter';
 
 async function bootstrap(): Promise<void> {
   const logger = new Logger('APIGateway:Bootstrap');
@@ -47,6 +48,9 @@ async function bootstrap(): Promise<void> {
       transformOptions: { enableImplicitConversion: false },
     }),
   );
+
+  // ── Filtro global: traduce errores de microservicio (TCP) a HTTP claros ──
+  app.useGlobalFilters(new RpcHttpExceptionFilter());
 
   // ── Swagger / OpenAPI ────────────────────────────────────────────────────
   const swaggerConfig = new DocumentBuilder()
