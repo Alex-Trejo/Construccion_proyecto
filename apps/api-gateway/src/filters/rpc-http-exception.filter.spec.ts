@@ -98,8 +98,8 @@ describe('RpcHttpExceptionFilter', () => {
     expect(mockResponse.json).toHaveBeenCalledWith({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Internal server error',
-
-
+    });
+  });
   it('should describe circular references safely', () => {
     const circularObj: any = {};
     circularObj.self = circularObj;
