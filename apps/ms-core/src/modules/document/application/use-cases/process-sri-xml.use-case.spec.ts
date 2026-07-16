@@ -70,7 +70,7 @@ describe('ProcessSriXmlUseCase', () => {
 
     expect(result.success).toBe(true);
     expect(result.parsedDocument).toEqual(mockParsedDoc);
-    expect(autoProvisionMock.execute).toHaveBeenCalledWith(mockParsedDoc);
+    expect(autoProvisionMock.execute).toHaveBeenCalledWith(mockParsedDoc, null);
   });
 
   it('should not fail process if auto provision throws error', async () => {
