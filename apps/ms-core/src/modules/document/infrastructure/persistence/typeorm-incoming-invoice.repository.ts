@@ -10,7 +10,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { InvoiceOrigin, InvoiceProcessingStatus } from '@sgc/shared';
 
 import { type IncomingInvoiceRepositoryPort } from '../../domain/ports/incoming-invoice-repository.port';
@@ -61,6 +61,17 @@ export class TypeOrmIncomingInvoiceRepository
     return schemas.map((s) => this.toDomain(s));
   }
 
+  async findByOwnerAndEstado(
+    ownerId: string | null,
+    estado: InvoiceProcessingStatus,
+  ): Promise<ReadonlyArray<IncomingInvoice>> {
+    const schemas = await this.repository.find({
+      where: { ownerId: ownerId === null ? IsNull() : ownerId, estado },
+      order: { updatedAt: 'DESC' },
+    });
+    return schemas.map((s) => this.toDomain(s));
+  }
+
   async update(invoice: IncomingInvoice): Promise<IncomingInvoice> {
     const saved = await this.repository.save(this.toSchema(invoice));
     return this.toDomain(saved);
@@ -83,6 +94,7 @@ export class TypeOrmIncomingInvoiceRepository
     schema.xmlLimpio = domain.xmlLimpio;
     schema.errorMessage = domain.errorMessage;
     schema.intentos = domain.intentos;
+    schema.ownerId = domain.ownerId;
     schema.createdAt = domain.createdAt;
     schema.updatedAt = domain.updatedAt;
     return schema;
@@ -98,6 +110,7 @@ export class TypeOrmIncomingInvoiceRepository
       xmlLimpio: schema.xmlLimpio,
       errorMessage: schema.errorMessage,
       intentos: schema.intentos,
+      ownerId: schema.ownerId,
       createdAt: schema.createdAt,
       updatedAt: schema.updatedAt,
     });

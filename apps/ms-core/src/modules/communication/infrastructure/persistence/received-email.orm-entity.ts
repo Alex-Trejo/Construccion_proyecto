@@ -18,9 +18,17 @@ import {
 import { EmailAttachmentOrmEntity } from './email-attachment.orm-entity';
 
 @Entity('received_emails')
+// Dedup por dueño: un Message-ID por usuario (multi-tenant).
+@Index('idx_received_emails_owner_msg', ['ownerId', 'emailMessageId'], {
+  unique: true,
+})
 export class ReceivedEmailOrmEntity {
   @PrimaryColumn('uuid')
   id!: string;
+
+  @Index('idx_received_emails_owner')
+  @Column({ name: 'owner_id', type: 'varchar', length: 255, nullable: true })
+  ownerId!: string | null;
 
   @Column({ name: 'email_from', type: 'varchar', length: 255 })
   emailFrom!: string;
@@ -31,8 +39,7 @@ export class ReceivedEmailOrmEntity {
   @Column({ name: 'email_date', type: 'timestamptz' })
   emailDate!: Date;
 
-  @Index('idx_received_emails_message_id', { unique: true })
-  @Column({ name: 'email_message_id', type: 'varchar', length: 500, unique: true })
+  @Column({ name: 'email_message_id', type: 'varchar', length: 500 })
   emailMessageId!: string;
 
   @OneToMany(

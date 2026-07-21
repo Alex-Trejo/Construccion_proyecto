@@ -22,6 +22,7 @@ import { TipoComprobanteOrmEntity } from '../document/infrastructure/persistence
 
 import { SeedService } from './infrastructure/seed.service';
 import { IdentitySyncHandler } from './application/handlers/identity-sync.handler';
+import { RoleSyncHandler } from './application/handlers/role-sync.handler';
 
 @Module({
   imports: [
@@ -32,7 +33,7 @@ import { IdentitySyncHandler } from './application/handlers/identity-sync.handle
       TipoComprobanteOrmEntity,
     ]),
   ],
-  controllers: [IdentitySyncHandler],
+  controllers: [IdentitySyncHandler, RoleSyncHandler],
   providers: [SeedService],
 })
 export class IdentityModule {}

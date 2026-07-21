@@ -1,16 +1,16 @@
 /**
  * @fileoverview Adaptador TypeORM — Repositorio de Proveedores.
  *
- * Implementa SupplierRepositoryPort usando TypeORM Repository.
- * Mapea entre la jerarquía de dominio (PersonaNatural/PersonaJuridica
- * + Value Objects Ruc/SupplierCode) y el schema plano `suppliers`.
+ * Implementa SupplierRepositoryPort con AISLAMIENTO por dueño (owner_id):
+ * todas las consultas filtran por el userId del solicitante. Mapea entre la
+ * jerarquía de dominio (PersonaNatural/PersonaJuridica + VOs) y el schema plano.
  *
  * @module TypeOrmSupplierRepository
  */
 
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, type FindOptionsWhere } from 'typeorm';
 import { SupplierType } from '@sgc/shared';
 
 import { type SupplierRepositoryPort } from '../../domain/ports/supplier-repository.port';
@@ -30,26 +30,32 @@ export class TypeOrmSupplierRepository implements SupplierRepositoryPort {
     private readonly repository: Repository<SupplierOrmEntity>,
   ) {}
 
+  // Catálogo de proveedores COMPARTIDO a nivel empresa (single-tenant): las
+  // lecturas y la unicidad NO filtran por dueño. `owner_id` se conserva solo
+  // como auditoría (quién lo creó, en `save`). Permisos → RBAC del gateway.
+
   async save(supplier: Supplier): Promise<Supplier> {
-    const schema = this.toSchema(supplier);
-    const saved = await this.repository.save(schema);
+    const saved = await this.repository.save(this.toSchema(supplier));
     this.logger.debug(`Proveedor guardado: ${saved.id} (${saved.ruc})`);
     return this.toDomain(saved);
   }
 
-  async findById(id: string): Promise<Supplier | null> {
+  async findById(id: string, _ownerId: string | null): Promise<Supplier | null> {
     const schema = await this.repository.findOne({ where: { id } });
     return schema ? this.toDomain(schema) : null;
   }
 
-  async findByTaxId(taxId: string): Promise<Supplier | null> {
+  async findByTaxId(
+    taxId: string,
+    _ownerId: string | null,
+  ): Promise<Supplier | null> {
     const schema = await this.repository.findOne({ where: { ruc: taxId } });
     return schema ? this.toDomain(schema) : null;
   }
 
-  async findAll(): Promise<ReadonlyArray<Supplier>> {
+  async findAll(_ownerId: string | null): Promise<ReadonlyArray<Supplier>> {
     const schemas = await this.repository.find({
-      where: { isActive: true },
+      where: { isActive: true } as FindOptionsWhere<SupplierOrmEntity>,
       order: { createdAt: 'DESC' },
     });
     return schemas.map((s) => this.toDomain(s));
@@ -58,6 +64,7 @@ export class TypeOrmSupplierRepository implements SupplierRepositoryPort {
   async findPaginated(
     page: number,
     limit: number,
+    _ownerId: string | null,
   ): Promise<[ReadonlyArray<Supplier>, number]> {
     const [schemas, total] = await this.repository.findAndCount({
       order: { createdAt: 'DESC' },
@@ -68,17 +75,17 @@ export class TypeOrmSupplierRepository implements SupplierRepositoryPort {
   }
 
   async update(supplier: Supplier): Promise<Supplier> {
-    const schema = this.toSchema(supplier);
-    const saved = await this.repository.save(schema);
+    const saved = await this.repository.save(this.toSchema(supplier));
     return this.toDomain(saved);
   }
 
-  async deactivate(id: string): Promise<void> {
+  async deactivate(id: string, _ownerId: string | null): Promise<void> {
     await this.repository.update({ id }, { isActive: false });
     this.logger.debug(`Proveedor desactivado: ${id}`);
   }
 
-  async existsByTaxId(taxId: string): Promise<boolean> {
+  /** Unicidad GLOBAL (empresa): un RUC no se repite, lo cree quien lo cree. */
+  async existsByTaxId(taxId: string, _ownerId: string | null): Promise<boolean> {
     const count = await this.repository.count({ where: { ruc: taxId } });
     return count > 0;
   }
@@ -88,6 +95,7 @@ export class TypeOrmSupplierRepository implements SupplierRepositoryPort {
   private toSchema(domain: Supplier): SupplierOrmEntity {
     const schema = new SupplierOrmEntity();
     schema.id = domain.id;
+    schema.ownerId = domain.ownerId;
     schema.supplierCode = domain.supplierCode.value;
     schema.supplierType = domain.supplierType;
     schema.ruc = domain.ruc.value;
@@ -98,7 +106,6 @@ export class TypeOrmSupplierRepository implements SupplierRepositoryPort {
     schema.createdAt = domain.createdAt;
     schema.updatedAt = domain.updatedAt;
 
-    // Campos por defecto (no provistos por el dominio Supplier).
     schema.obligadoContabilidad = false;
     schema.regimen = null;
 
@@ -117,7 +124,6 @@ export class TypeOrmSupplierRepository implements SupplierRepositoryPort {
       schema.lastName = null;
       schema.cedula = null;
     } else {
-      // Fallback defensivo: el dominio siempre es una de las dos subclases.
       schema.razonSocial = domain.getDisplayName();
     }
 
@@ -127,6 +133,7 @@ export class TypeOrmSupplierRepository implements SupplierRepositoryPort {
   private toDomain(schema: SupplierOrmEntity): Supplier {
     const base = {
       id: schema.id,
+      ownerId: schema.ownerId,
       supplierCode: SupplierCode.fromExisting(schema.supplierCode),
       ruc: Ruc.create(schema.ruc),
       email: schema.email ?? '',

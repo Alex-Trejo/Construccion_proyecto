@@ -29,6 +29,7 @@ import { ImapClientAdapter } from './infrastructure/adapters/imap-client.adapter
 import { ImapConnectionFactory } from './infrastructure/factories/imap-connection.factory';
 import { EmailSyncCronService } from './application/services/email-sync-cron.service';
 import { EmailProcessorService } from './application/services/email-processor.service';
+import { SyncTriggerController } from './presentation/sync-trigger.controller';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { EmailProcessorService } from './application/services/email-processor.se
       },
     ]),
   ],
+  controllers: [SyncTriggerController],
   providers: [
     // ── Infrastructure ─────────────────────────────────────────────────
     ImapConnectionFactory,

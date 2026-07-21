@@ -28,7 +28,7 @@ import {
   type ParsedSriDocument,
 } from '../../domain/ports/xml-sri-parser.port';
 import { FetchAndSanitizeXmlUseCase } from './fetch-and-sanitize-xml.use-case';
-import { AutoProvisionEntitiesUseCase } from './auto-provision-entities.use-case';
+import { PersistParsedDocumentUseCase } from './persist-parsed-document.use-case';
 
 /**
  * Resultado de procesar un XML del SRI.
@@ -52,7 +52,7 @@ export class ProcessSriXmlUseCase {
     @Inject(XML_SRI_PARSER_PORT)
     private readonly xmlParser: XmlSriParserPort,
     private readonly fetchAndSanitizeXml: FetchAndSanitizeXmlUseCase,
-    private readonly autoProvisionEntities: AutoProvisionEntitiesUseCase,
+    private readonly persistParsed: PersistParsedDocumentUseCase,
   ) {}
 
   /**
@@ -66,6 +66,7 @@ export class ProcessSriXmlUseCase {
   async execute(
     xmlContent: string,
     fileName: string,
+    ownerId: string | null = null,
   ): Promise<ProcessSriXmlResult> {
     this.logger.log(`Procesando pipeline XML del SRI: ${fileName}`);
 
@@ -101,20 +102,29 @@ export class ProcessSriXmlUseCase {
       `emisor=${parsedDocument.issuerName}, total=${parsedDocument.totalAmount}`,
     );
 
-    // ── Paso 3: Auto-creación de Proveedor y Compañía ────────────────────
+    // ── Paso 3: Registrar el Comprobante (documents) + validar + proveedor ──
+    // Unifica el correo IMAP con la carga TXT: la factura recibida por correo
+    // también se registra como Comprobante (con RIDE PDF y validación), no solo
+    // en Comunicaciones. La unicidad owner+RUC+N° evita duplicar si ya llegó.
     try {
-      const provisionResult = await this.autoProvisionEntities.execute(parsedDocument);
-      if (provisionResult.supplierCreated) {
-        this.logger.log(`Proveedor ${provisionResult.supplierRuc} auto-creado exitosamente.`);
-      }
+      const created = await this.persistParsed.execute(
+        parsedDocument,
+        xmlLimpio,
+        ownerId,
+        'IMAP_SYNC',
+      );
+      this.logger.log(
+        created
+          ? `Comprobante registrado desde correo: ${parsedDocument.accessKey}`
+          : `Comprobante ya existía (correo), se omitió: ${parsedDocument.accessKey}`,
+      );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error en auto-aprovisionamiento para ${fileName}: ${errorMsg}`);
-      // Decisión: no fallar el procesamiento si la auto-creación falla,
-      // el documento ya está parseado correctamente.
+      this.logger.error(`Error registrando comprobante de ${fileName}: ${errorMsg}`);
+      // No se falla el procesamiento: el XML ya está parseado y guardado en el correo.
     }
 
-    // Nota: El guardado en MinIO y en tabla received_emails ya fue realizado
+    // Nota: El guardado del adjunto en MinIO y en received_emails ya fue realizado
     // por el DocumentReceivedHandler antes de llamar a este caso de uso.
 
     return {

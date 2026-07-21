@@ -34,7 +34,7 @@ describe('CommunicationTcpController', () => {
     const result = await controller.listEmails(payload);
 
     expect(result).toEqual({ items: [], total: 0 });
-    expect(listEmailsUseCaseMock.execute).toHaveBeenCalledWith({ page: 1, limit: 10 });
+    expect(listEmailsUseCaseMock.execute).toHaveBeenCalledWith({ page: 1, limit: 10, ownerId: 'anon' });
   });
 
   it('should get email detail', async () => {
@@ -44,7 +44,7 @@ describe('CommunicationTcpController', () => {
     const result = await controller.getEmailDetail(payload);
 
     expect(result).toEqual({ id: '1' });
-    expect(getEmailDetailUseCaseMock.execute).toHaveBeenCalledWith('1');
+    expect(getEmailDetailUseCaseMock.execute).toHaveBeenCalledWith('1', 'anon');
   });
 
   it('should get attachment url', async () => {
@@ -54,6 +54,6 @@ describe('CommunicationTcpController', () => {
     const result = await controller.getAttachmentUrl(payload);
 
     expect(result).toEqual({ url: 'http' });
-    expect(getAttachmentUrlUseCaseMock.execute).toHaveBeenCalledWith('1', 'a1');
+    expect(getAttachmentUrlUseCaseMock.execute).toHaveBeenCalledWith('1', 'a1', 'anon');
   });
 });

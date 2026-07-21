@@ -65,7 +65,10 @@ export class AutoProvisionEntitiesUseCase {
    * @param parsedDoc - Documento parseado con RUC emisor y receptor.
    * @returns Resultado del aprovisionamiento.
    */
-  async execute(parsedDoc: ParsedSriDocument): Promise<AutoProvisionResult> {
+  async execute(
+    parsedDoc: ParsedSriDocument,
+    ownerId: string | null = null,
+  ): Promise<AutoProvisionResult> {
     const issuerRuc = parsedDoc.issuerTaxId;
     const buyerRuc = parsedDoc.buyerTaxId;
 
@@ -77,7 +80,13 @@ export class AutoProvisionEntitiesUseCase {
     let supplierCreated = false;
     let supplierDisplayName: string | null = null;
 
-    const existingSupplier = await this.supplierRepo.findByTaxId(issuerRuc);
+    // El proveedor auto-provisionado pertenece al dueño del correo (userId
+    // inyectado por ms-sync). Si no hay dueño, queda como registro de sistema.
+    const systemOwner: string | null = ownerId;
+    const existingSupplier = await this.supplierRepo.findByTaxId(
+      issuerRuc,
+      systemOwner,
+    );
 
     if (!existingSupplier) {
       this.logger.log(`Proveedor ${issuerRuc} no existe. Consultando catastro SRI...`);
@@ -86,7 +95,7 @@ export class AutoProvisionEntitiesUseCase {
 
       if (sriData) {
         const dto = this.mapSriDataToCreateDto(sriData);
-        const supplier = SupplierFactory.create(dto);
+        const supplier = SupplierFactory.create(dto, systemOwner);
         await this.supplierRepo.save(supplier);
         supplierCreated = true;
         supplierDisplayName = supplier.getDisplayName();

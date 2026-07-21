@@ -22,22 +22,28 @@ import {
   NotFoundException,
   ParseIntPipe,
   DefaultValuePipe,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { buildTcpMetadata } from '../auth/tcp-metadata';
+import type { AuthenticatedUser } from '../auth/keycloak-jwt.strategy';
 import { firstValueFrom, timeout } from 'rxjs';
-import { randomUUID } from 'node:crypto';
 import {
   MICROSERVICE_TOKENS,
   COMMUNICATION_PATTERNS,
   type TcpPayload,
-  type TcpRequestMetadata,
 } from '@sgc/shared';
 
 /** Timeout para llamadas TCP al ms-core (ms). */
 const TCP_TIMEOUT_MS = 10_000;
 
+@ApiTags('Communications')
+@ApiBearerAuth()
 @Controller('communications')
 @UseGuards(JwtAuthGuard)
 export class CommunicationController {
@@ -49,26 +55,12 @@ export class CommunicationController {
   ) {}
 
   /**
-   * Construye la metadata de trazabilidad para cada petición TCP.
-   *
-   * TODO (Fase B — Auth): poblar `userId` desde el JWT autenticado
-   * una vez que el AuthModule del gateway esté activo. Por ahora se
-   * marca como 'anonymous' hasta cablear la seguridad.
-   */
-  private buildMetadata(): TcpRequestMetadata {
-    return {
-      correlationId: randomUUID(),
-      userId: 'anonymous',
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  /**
    * GET /communications?page=1&limit=10
-   * Lista paginada de correos recibidos.
+   * Lista paginada de correos recibidos (del usuario autenticado).
    */
   @Get()
   async listEmails(
+    @CurrentUser() user: AuthenticatedUser,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
@@ -76,7 +68,7 @@ export class CommunicationController {
 
     const payload: TcpPayload<{ page: number; limit: number }> = {
       data: { page, limit },
-      metadata: this.buildMetadata(),
+      metadata: buildTcpMetadata(user),
     };
 
     const result = await firstValueFrom(
@@ -93,12 +85,15 @@ export class CommunicationController {
    * Detalle de un correo con todos sus adjuntos.
    */
   @Get(':id')
-  async getEmailDetail(@Param('id') emailId: string) {
+  async getEmailDetail(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') emailId: string,
+  ) {
     this.logger.debug(`GET /communications/${emailId}`);
 
     const payload: TcpPayload<{ emailId: string }> = {
       data: { emailId },
-      metadata: this.buildMetadata(),
+      metadata: buildTcpMetadata(user),
     };
 
     const result = await firstValueFrom(
@@ -123,6 +118,7 @@ export class CommunicationController {
    */
   @Get(':id/attachments/:attachmentId/download')
   async getAttachmentDownloadUrl(
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id') emailId: string,
     @Param('attachmentId') attachmentId: string,
   ) {
@@ -132,7 +128,7 @@ export class CommunicationController {
 
     const payload: TcpPayload<{ emailId: string; attachmentId: string }> = {
       data: { emailId, attachmentId },
-      metadata: this.buildMetadata(),
+      metadata: buildTcpMetadata(user),
     };
 
     const result = await firstValueFrom(
@@ -148,5 +144,49 @@ export class CommunicationController {
     }
 
     return result;
+  }
+
+  /**
+   * GET /communications/:id/attachments/:attachmentId/file
+   *
+   * Transmite el adjunto al navegador SIN exponer MinIO: el gateway obtiene la
+   * URL pre-firmada (endpoint interno), la descarga por la red privada y hace
+   * de proxy. Autenticado + aislado por dueño.
+   */
+  @Get(':id/attachments/:attachmentId/file')
+  async streamAttachment(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') emailId: string,
+    @Param('attachmentId') attachmentId: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const payload: TcpPayload<{ emailId: string; attachmentId: string }> = {
+      data: { emailId, attachmentId },
+      metadata: buildTcpMetadata(user),
+    };
+    const result = await firstValueFrom(
+      this.msCoreClient
+        .send<{ url: string; filename: string; contentType: string } | null>(
+          COMMUNICATION_PATTERNS.GET_ATTACHMENT_URL,
+          payload,
+        )
+        .pipe(timeout(TCP_TIMEOUT_MS)),
+    );
+    if (!result) {
+      throw new NotFoundException('Adjunto no encontrado.');
+    }
+
+    const upstream = await fetch(result.url);
+    if (!upstream.ok || !upstream.body) {
+      throw new NotFoundException('Adjunto no disponible.');
+    }
+    const buffer = Buffer.from(await upstream.arrayBuffer());
+    res.setHeader('Content-Type', result.contentType || 'application/octet-stream');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${result.filename.replace(/"/g, '')}"`,
+    );
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.send(buffer);
   }
 }

@@ -40,3 +40,21 @@ export interface DownloadUrlResult {
   readonly size: number;
   readonly expiresInSeconds: number;
 }
+
+/**
+ * Resultado de la carga masiva de un TXT del SRI.
+ * (Reflejo de ProcessTxtBatchResult de ms-core; no vive en @sgc/shared.)
+ */
+export interface ProcessTxtBatchResult {
+  readonly totalKeysFound: number;
+  readonly newKeysRegistered: number;
+  readonly duplicatesSkipped: number;
+  readonly invalidKeysSkipped: number;
+  readonly invalidKeys: ReadonlyArray<string>;
+}
+
+/** Respuesta de GET /documents/:id/preview (Pre-Signed URL). */
+export interface DocumentPreviewResult {
+  readonly url: string;
+  readonly expiresInSeconds: number;
+}

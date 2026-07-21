@@ -24,7 +24,7 @@ describe('GetReceivedEmailDetailUseCase', () => {
     const result = await useCase.execute('email-1');
 
     expect(result).toEqual(mockEmail);
-    expect(emailRepoMock.findById).toHaveBeenCalledWith('email-1');
+    expect(emailRepoMock.findById).toHaveBeenCalledWith('email-1', undefined);
   });
 
   it('should return null if email not found', async () => {

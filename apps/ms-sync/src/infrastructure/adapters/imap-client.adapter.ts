@@ -20,6 +20,7 @@ import { simpleParser, type ParsedMail, type Attachment } from 'mailparser';
 
 import {
   type ImapClientPort,
+  type ImapAccountConfig,
   type ProcessedEmail,
   type EmailAttachment,
   type EmailMetadata,
@@ -35,11 +36,13 @@ export class ImapClientAdapter implements ImapClientPort {
 
   constructor(private readonly connectionFactory: ImapConnectionFactory) {}
 
-  async fetchUnseenWithAttachments(): Promise<ReadonlyArray<ProcessedEmail>> {
+  async fetchUnseenWithAttachments(
+    account: ImapAccountConfig,
+  ): Promise<ReadonlyArray<ProcessedEmail>> {
     let client: ImapFlow | null = null;
 
     try {
-      client = await this.connectionFactory.create();
+      client = await this.connectionFactory.create(account);
 
       // ── 1. Abrir INBOX en modo lectura/escritura ────────────────────────
       const lock = await client.getMailboxLock('INBOX');

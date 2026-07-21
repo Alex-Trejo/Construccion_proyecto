@@ -30,10 +30,13 @@ import {
 } from '../../domain/ports/received-email-repository.port';
 import { ReceivedEmail } from '../../domain/entities/received-email.entity';
 import { EmailAttachmentEntity } from '../../domain/entities/email-attachment.entity';
+import type { UploadResult } from '../../domain/ports/object-storage.port';
 import { ProcessSriXmlUseCase } from '../../../document/application/use-cases/process-sri-xml.use-case';
 
 /** Payload recibido de ms-sync (debe coincidir con DocumentReceivedPayload). */
 interface IncomingDocumentPayload {
+  /** Dueño del correo (userId del JWT). Puede faltar en eventos legados. */
+  readonly userId?: string;
   readonly filename: string;
   readonly extension: string;
   readonly contentBase64: string;
@@ -75,15 +78,22 @@ export class DocumentReceivedHandler {
       `📥 Documento recibido: ${payload.filename} de ${payload.emailFrom}`,
     );
 
+    const ownerId = payload.userId ?? null;
+
     try {
-      // ── 1. Deduplicación por Message-ID ─────────────────────────────────
-      const alreadyExists = await this.emailRepo.existsByMessageId(
+      // ── 1. Buscar el correo por Message-ID (dedup a nivel de ADJUNTO) ────
+      // Un mismo correo llega como VARIOS eventos (uno por adjunto). Si ya
+      // existe el correo, NO se descarta: se AÑADE el nuevo adjunto (p. ej. el
+      // XML que llega después del PDF). Solo se ignora si ESE mismo adjunto
+      // (por nombre) ya estaba guardado.
+      const existing = await this.emailRepo.findByMessageId(
         payload.emailMessageId,
+        ownerId,
       );
 
-      if (alreadyExists) {
+      if (existing?.attachments.some((a) => a.filename === payload.filename)) {
         this.logger.debug(
-          `Correo ${payload.emailMessageId} ya procesado. Ignorando duplicado.`,
+          `Adjunto ${payload.filename} de ${payload.emailMessageId} ya existe. Ignorando duplicado.`,
         );
         return;
       }
@@ -91,32 +101,19 @@ export class DocumentReceivedHandler {
       // ── 2. Decodificar base64 a Buffer ──────────────────────────────────
       const fileBuffer = Buffer.from(payload.contentBase64, 'base64');
 
-      // ── 3. Generar storage key con estructura organizada ────────────────
-      const emailId = randomUUID();
-      const attachmentId = randomUUID();
+      // ── 3. Subir el adjunto a MinIO ─────────────────────────────────────
+      const emailId = existing?.id ?? randomUUID();
       const datePrefix = this.getDatePrefix(payload.emailDate);
       const storageKey = `communications/${datePrefix}/${emailId}/${payload.filename}`;
-
-      // ── 4. Subir a MinIO ────────────────────────────────────────────────
-      const uploadResult = await this.storage.uploadFile({
-        bucket: this.bucketName,
-        key: storageKey,
-        content: fileBuffer,
-        contentType: payload.contentType,
-        metadata: {
-          'x-sgc-email-from': payload.emailFrom,
-          'x-sgc-email-subject': payload.emailSubject,
-          'x-sgc-original-filename': payload.filename,
-        },
-      });
-
-      this.logger.log(
-        `☁️ Archivo subido a MinIO: ${uploadResult.bucket}/${uploadResult.key}`,
+      const uploadResult = await this.uploadAttachment(
+        fileBuffer,
+        storageKey,
+        payload,
       );
 
-      // ── 5. Crear entidades y persistir ──────────────────────────────────
+      // ── 4. Crear el adjunto y persistirlo ───────────────────────────────
       const attachment = new EmailAttachmentEntity({
-        id: attachmentId,
+        id: randomUUID(),
         receivedEmailId: emailId,
         filename: payload.filename,
         extension: payload.extension,
@@ -127,25 +124,29 @@ export class DocumentReceivedHandler {
         createdAt: new Date(),
       });
 
+      // Si el correo ya existía → se le AÑADE el adjunto; si no → se crea.
       const receivedEmail = new ReceivedEmail({
         id: emailId,
-        emailFrom: payload.emailFrom,
-        emailSubject: payload.emailSubject,
-        emailDate: new Date(payload.emailDate),
+        ownerId: existing?.ownerId ?? ownerId,
+        emailFrom: existing?.emailFrom ?? payload.emailFrom,
+        emailSubject: existing?.emailSubject ?? payload.emailSubject,
+        emailDate: existing?.emailDate ?? new Date(payload.emailDate),
         emailMessageId: payload.emailMessageId,
-        attachments: [attachment],
-        createdAt: new Date(),
+        attachments: [...(existing?.attachments ?? []), attachment],
+        createdAt: existing?.createdAt ?? new Date(),
       });
 
       await this.emailRepo.save(receivedEmail);
 
       this.logger.log(
-        `💾 Correo guardado en BD: ${emailId} (${payload.filename})`,
+        existing
+          ? `💾 Adjunto añadido al correo ${emailId}: ${payload.filename}`
+          : `💾 Correo guardado en BD: ${emailId} (${payload.filename})`,
       );
 
-      // ── 6. Si es XML → Ejecutar pipeline SRI completo ──────────────────
+      // ── 5. Si es XML → Ejecutar pipeline SRI completo ──────────────────
       if (payload.extension === 'xml') {
-        await this.processXmlAttachment(fileBuffer, payload.filename);
+        await this.processXmlAttachment(fileBuffer, payload.filename, ownerId);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -153,6 +154,29 @@ export class DocumentReceivedHandler {
         `❌ Error procesando documento ${payload.filename}: ${errorMsg}`,
       );
     }
+  }
+
+  /** Sube un adjunto a MinIO con la metadata del correo. */
+  private async uploadAttachment(
+    content: Buffer,
+    storageKey: string,
+    payload: IncomingDocumentPayload,
+  ): Promise<UploadResult> {
+    const uploadResult = await this.storage.uploadFile({
+      bucket: this.bucketName,
+      key: storageKey,
+      content,
+      contentType: payload.contentType,
+      metadata: {
+        'x-sgc-email-from': payload.emailFrom,
+        'x-sgc-email-subject': payload.emailSubject,
+        'x-sgc-original-filename': payload.filename,
+      },
+    });
+    this.logger.log(
+      `☁️ Archivo subido a MinIO: ${uploadResult.bucket}/${uploadResult.key}`,
+    );
+    return uploadResult;
   }
 
   /**
@@ -163,11 +187,16 @@ export class DocumentReceivedHandler {
   private async processXmlAttachment(
     fileBuffer: Buffer,
     filename: string,
+    ownerId: string | null,
   ): Promise<void> {
     this.logger.log(`🔗 Iniciando pipeline SRI para XML: ${filename}`);
 
     const rawXml = fileBuffer.toString('utf-8');
-    const result = await this.processSriXmlUseCase.execute(rawXml, filename);
+    const result = await this.processSriXmlUseCase.execute(
+      rawXml,
+      filename,
+      ownerId,
+    );
 
     if (result.success) {
       this.logger.log(

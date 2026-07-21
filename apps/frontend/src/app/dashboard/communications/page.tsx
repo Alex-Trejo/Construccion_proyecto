@@ -14,16 +14,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useApi } from '@/lib/api-client';
 import { Button } from '@/components/ui/Button';
-import type {
-  DownloadUrlResult,
-  PaginatedEmails,
-  ReceivedEmail,
-} from '@/lib/types';
+import { useTranslation } from '@/lib/i18n/language-provider';
+import type { PaginatedEmails, ReceivedEmail } from '@/lib/types';
 
 const PAGE_SIZE = 10;
 
 export default function CommunicationsPage() {
-  const { apiGet } = useApi();
+  const { apiGet, apiDownload } = useApi();
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<PaginatedEmails | null>(null);
   const [loading, setLoading] = useState(false);
@@ -43,14 +41,14 @@ export default function CommunicationsPage() {
         const text =
           typeof err === 'object' && err !== null && 'message' in err
             ? String((err as { message: unknown }).message)
-            : 'Failed to load communications';
+            : t('communications.loadError');
         setError(text);
         setResult(null);
       } finally {
         setLoading(false);
       }
     },
-    [apiGet],
+    [apiGet, t],
   );
 
   useEffect(() => {
@@ -58,16 +56,20 @@ export default function CommunicationsPage() {
     void load(page);
   }, [load, page]);
 
-  const handleDownload = async (emailId: string, attachmentId: string) => {
+  const handleDownload = async (
+    emailId: string,
+    attachmentId: string,
+    filename: string,
+  ) => {
     setDownloading(attachmentId);
     try {
-      const res = await apiGet<DownloadUrlResult>(
-        `/communications/${emailId}/attachments/${attachmentId}/download`,
+      // Descarga por el PROXY autenticado del gateway (MinIO nunca se expone).
+      await apiDownload(
+        `/communications/${emailId}/attachments/${attachmentId}/file`,
+        filename,
       );
-      // Descarga directa desde MinIO con la Pre-Signed URL.
-      window.open(res.url, '_blank', 'noopener,noreferrer');
     } catch {
-      setError('Could not generate the download link.');
+      setError(t('communications.downloadError'));
     } finally {
       setDownloading(null);
     }
@@ -79,11 +81,13 @@ export default function CommunicationsPage() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-col gap-2">
-          <span className="brutal-badge w-fit bg-primary">Communications</span>
-          <h1 className="text-3xl font-bold">Received emails</h1>
+          <span className="brutal-badge w-fit bg-primary">
+            {t('communications.badge')}
+          </span>
+          <h1 className="text-3xl font-bold">{t('communications.title')}</h1>
         </div>
         <Button variant="secondary" onClick={() => void load(page)}>
-          ↻ Refresh
+          {t('communications.refresh')}
         </Button>
       </header>
 
@@ -97,20 +101,20 @@ export default function CommunicationsPage() {
         <table className="brutal-table">
           <thead>
             <tr>
-              <th>From</th>
-              <th>Subject</th>
-              <th>Date</th>
-              <th>Attachments</th>
+              <th>{t('communications.th.from')}</th>
+              <th>{t('communications.th.subject')}</th>
+              <th>{t('communications.th.date')}</th>
+              <th>{t('communications.th.attachments')}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4}>Loading…</td>
+                <td colSpan={4}>{t('communications.loading')}</td>
               </tr>
             ) : !result || result.data.length === 0 ? (
               <tr>
-                <td colSpan={4}>No emails received yet.</td>
+                <td colSpan={4}>{t('communications.empty')}</td>
               </tr>
             ) : (
               result.data.map((email) => (
@@ -119,6 +123,9 @@ export default function CommunicationsPage() {
                   email={email}
                   downloading={downloading}
                   onDownload={handleDownload}
+                  downloadTitle={(filename) =>
+                    t('communications.downloadTitle', { filename })
+                  }
                 />
               ))
             )}
@@ -129,7 +136,13 @@ export default function CommunicationsPage() {
       {/* ── Pagination ───────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm text-dark/60">
-          {result ? `${result.total} emails · page ${result.page} of ${totalPages}` : '—'}
+          {result
+            ? t('communications.pageInfo', {
+                total: result.total,
+                page: result.page,
+                totalPages,
+              })
+            : '—'}
         </p>
         <div className="flex gap-2">
           <Button
@@ -137,14 +150,14 @@ export default function CommunicationsPage() {
             disabled={loading || page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
-            ← Prev
+            {t('communications.prev')}
           </Button>
           <Button
             variant="secondary"
             disabled={loading || page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
-            Next →
+            {t('communications.next')}
           </Button>
         </div>
       </div>
@@ -156,11 +169,13 @@ function EmailRow({
   email,
   downloading,
   onDownload,
-}: {
+  downloadTitle,
+}: Readonly<{
   email: ReceivedEmail;
   downloading: string | null;
-  onDownload: (emailId: string, attachmentId: string) => void;
-}) {
+  onDownload: (emailId: string, attachmentId: string, filename: string) => void;
+  downloadTitle: (filename: string) => string;
+}>) {
   return (
     <tr>
       <td className="font-medium">{email.emailFrom}</td>
@@ -176,10 +191,10 @@ function EmailRow({
             {email.attachments.map((att) => (
               <button
                 key={att.id}
-                onClick={() => onDownload(email.id, att.id)}
+                onClick={() => onDownload(email.id, att.id, att.filename)}
                 disabled={downloading === att.id}
                 className="brutal-badge bg-primary transition hover:translate-y-0.5 disabled:opacity-50"
-                title={`Download ${att.filename}`}
+                title={downloadTitle(att.filename)}
               >
                 {downloading === att.id ? '…' : `↓ ${att.extension.toUpperCase()}`}
               </button>

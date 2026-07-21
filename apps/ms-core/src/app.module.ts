@@ -23,6 +23,7 @@ import { DocumentModule } from './modules/document/document.module';
 import { CommunicationModule } from './modules/communication/communication.module';
 import { SupplierModule } from './modules/supplier/supplier.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { ImapConfigModule } from './modules/imap-config/imap-config.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { IdentityModule } from './modules/identity/identity.module';
     SupplierModule,
     DocumentModule,
     CommunicationModule,
+    ImapConfigModule,
   ],
 })
 export class AppModule {}

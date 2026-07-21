@@ -10,9 +10,10 @@
  */
 
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MICROSERVICE_TOKENS } from '@sgc/shared';
 
@@ -24,7 +25,13 @@ import { AuthModule } from './auth/auth.module';
 import { CommunicationController } from './controllers/communication.controller';
 import { SupplierController } from './controllers/supplier.controller';
 import { HealthController } from './controllers/health.controller';
+import { UserController } from './controllers/user.controller';
+import { RoleController } from './controllers/role.controller';
+import { DocumentController } from './controllers/document.controller';
+import { ReportsController } from './controllers/reports.controller';
+import { UserImapController } from './controllers/user-imap.controller';
 import { IdentitySyncInterceptor } from './auth/identity-sync.interceptor';
+import { KeycloakAdminService } from './keycloak/keycloak-admin.service';
 
 @Module({
   imports: [
@@ -67,14 +74,33 @@ import { IdentitySyncInterceptor } from './auth/identity-sync.interceptor';
     // ── Autenticación (JWT/Keycloak) ─────────────────────────────────────
     AuthModule,
 
+    // ── Rate limiting global (anti-abuso / anti-DoS) ─────────────────────
+    // 100 peticiones por minuto y por IP (real, gracias a "trust proxy" en main).
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
+
     // ── Métricas Prometheus (expone /api/v1/metrics) ─────────────────────
     PrometheusModule.register(),
   ],
-  controllers: [HealthController, CommunicationController, SupplierController],
+  controllers: [
+    HealthController,
+    CommunicationController,
+    SupplierController,
+    UserController,
+    RoleController,
+    DocumentController,
+    ReportsController,
+    UserImapController,
+  ],
   providers: [
+    KeycloakAdminService,
     {
       provide: APP_INTERCEPTOR,
       useClass: IdentitySyncInterceptor,
+    },
+    // Aplica el rate limiting a todas las rutas.
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

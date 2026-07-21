@@ -22,6 +22,8 @@ export interface IncomingInvoiceProps {
   readonly xmlLimpio: string | null;
   readonly errorMessage: string | null;
   readonly intentos: number;
+  /** Dueño (userId del JWT) que stageó la clave; null si es de sistema. */
+  readonly ownerId?: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -63,6 +65,10 @@ export class IncomingInvoice {
 
   public get intentos(): number {
     return this.props.intentos;
+  }
+
+  public get ownerId(): string | null {
+    return this.props.ownerId ?? null;
   }
 
   public get createdAt(): Date {

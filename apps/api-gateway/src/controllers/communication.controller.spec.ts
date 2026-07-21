@@ -35,7 +35,8 @@ describe('CommunicationController', () => {
       const mockResult = { items: [], total: 0 };
       clientProxyMock.send.mockReturnValue(of(mockResult));
 
-      const result = await controller.listEmails(1, 10);
+      const mockUser = { userId: '123' } as any;
+      const result = await controller.listEmails(1, 10, mockUser);
 
       expect(result).toEqual(mockResult);
       expect(clientProxyMock.send).toHaveBeenCalled();
@@ -47,7 +48,8 @@ describe('CommunicationController', () => {
       const mockResult = { id: '1', subject: 'Test' };
       clientProxyMock.send.mockReturnValue(of(mockResult));
 
-      const result = await controller.getEmailDetail('1');
+      const mockUser = { userId: '123' } as any;
+      const result = await controller.getEmailDetail('1', mockUser);
 
       expect(result).toEqual(mockResult);
     });
@@ -55,7 +57,8 @@ describe('CommunicationController', () => {
     it('should throw NotFoundException if not found', async () => {
       clientProxyMock.send.mockReturnValue(of(null));
 
-      await expect(controller.getEmailDetail('1')).rejects.toThrow(NotFoundException);
+      const mockUser = { userId: '123' } as any;
+      await expect(controller.getEmailDetail('1', mockUser)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -64,7 +67,8 @@ describe('CommunicationController', () => {
       const mockResult = { url: 'http://minio/download' };
       clientProxyMock.send.mockReturnValue(of(mockResult));
 
-      const result = await controller.getAttachmentDownloadUrl('1', 'a1');
+      const mockUser = { userId: '123' } as any;
+      const result = await controller.getAttachmentDownloadUrl('1', 'a1', mockUser);
 
       expect(result).toEqual(mockResult);
     });
@@ -72,7 +76,8 @@ describe('CommunicationController', () => {
     it('should throw NotFoundException if attachment url not returned', async () => {
       clientProxyMock.send.mockReturnValue(of(null));
 
-      await expect(controller.getAttachmentDownloadUrl('1', 'a1')).rejects.toThrow(NotFoundException);
+      const mockUser = { userId: '123' } as any;
+      await expect(controller.getAttachmentDownloadUrl('1', 'a1', mockUser)).rejects.toThrow(NotFoundException);
     });
   });
 });

@@ -63,7 +63,7 @@ describe('SriSoapApiAdapter', () => {
   it('should throw error if <autorizacion> tag is missing', async () => {
     mockAxiosInstance.post.mockResolvedValue({ data: '<soapenv:Envelope></soapenv:Envelope>' });
 
-    await expect(adapter.fetchAuthorization('123')).rejects.toThrow('No se encontró el tag <autorizacion>');
+    await expect(adapter.fetchAuthorization('123')).rejects.toThrow('El SRI no devolvió autorización para la clave 123');
   });
 
   it('should throw error if <estado> tag is missing', async () => {

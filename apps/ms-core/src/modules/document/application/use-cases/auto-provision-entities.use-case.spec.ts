@@ -5,7 +5,11 @@ import { Ruc } from '../../../supplier/domain/value-objects/ruc.vo';
 
 jest.mock('../../../supplier/domain/value-objects/ruc.vo', () => ({
   Ruc: {
-    create: jest.fn().mockReturnValue({ value: '1791251237001' }),
+    create: jest.fn().mockImplementation((val) => ({ 
+      value: val, 
+      isCedula: val.length === 10, 
+      isRuc: val.length === 13 
+    })),
   },
 }));
 

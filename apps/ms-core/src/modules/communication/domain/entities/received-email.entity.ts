@@ -11,6 +11,8 @@ import { type EmailAttachmentEntity } from './email-attachment.entity';
 
 export interface ReceivedEmailProps {
   readonly id: string;
+  /** Dueño del correo (userId/keycloak sub) — aislamiento multi-tenant. */
+  readonly ownerId: string | null;
   readonly emailFrom: string;
   readonly emailSubject: string;
   readonly emailDate: Date;
@@ -21,6 +23,7 @@ export interface ReceivedEmailProps {
 
 export class ReceivedEmail {
   readonly id: string;
+  readonly ownerId: string | null;
   readonly emailFrom: string;
   readonly emailSubject: string;
   readonly emailDate: Date;
@@ -30,6 +33,7 @@ export class ReceivedEmail {
 
   constructor(props: ReceivedEmailProps) {
     this.id = props.id;
+    this.ownerId = props.ownerId;
     this.emailFrom = props.emailFrom;
     this.emailSubject = props.emailSubject;
     this.emailDate = props.emailDate;
