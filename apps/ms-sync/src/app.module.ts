@@ -17,6 +17,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MICROSERVICE_TOKENS } from '@sgc/shared';
 
 import {
@@ -43,6 +44,11 @@ import { SyncTriggerController } from './presentation/sync-trigger.controller';
 
     // ── Schedule (Cron/Polling) ──────────────────────────────────────────
     ScheduleModule.forRoot(),
+
+    // ── Métricas Prometheus (expone /metrics en el puerto HTTP interno) ──
+    // Solo accesible dentro de la red Docker; Prometheus lo scrapea. Incluye
+    // métricas por defecto de Node (CPU, RSS, event loop) igual que ms-core.
+    PrometheusModule.register(),
 
     // ── TCP Client hacia ms-core ─────────────────────────────────────────
     ClientsModule.registerAsync([
