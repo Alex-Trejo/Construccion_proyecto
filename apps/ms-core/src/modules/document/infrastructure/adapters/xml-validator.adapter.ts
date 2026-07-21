@@ -22,6 +22,11 @@ import {
 export class XmlValidatorAdapter implements XmlValidatorPort {
   private readonly logger = new Logger(XmlValidatorAdapter.name);
 
+  /** Cache de la carga de libxmljs2 (undefined = aún no intentado). */
+  private libxmljsCache: LibxmljsModule | null | undefined = undefined;
+  /** Para avisar del fallback una sola vez (evita ruido en cada validación). */
+  private warnedFallback = false;
+
   async validateAgainstXsd(
     xmlContent: string,
     xsdPath: string,
@@ -36,10 +41,14 @@ export class XmlValidatorAdapter implements XmlValidatorPort {
         return this.validateWithLibxmljs(libxmljs, xmlContent, xsdPath);
       }
 
-      // Fallback: validación básica por estructura
-      this.logger.warn(
-        'libxmljs2 no disponible. Usando validación estructural básica.',
-      );
+      // Fallback: validación básica por estructura. Se avisa UNA sola vez:
+      // libxmljs2 es opcional (módulo nativo) y su ausencia es esperada.
+      if (!this.warnedFallback) {
+        this.warnedFallback = true;
+        this.logger.warn(
+          'libxmljs2 no disponible. Usando validación estructural básica (aviso único).',
+        );
+      }
       return this.validateBasicStructure(xmlContent);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -56,6 +65,11 @@ export class XmlValidatorAdapter implements XmlValidatorPort {
    * Si no está instalada, retorna null y usa el fallback.
    */
   private async loadLibxmljs(): Promise<LibxmljsModule | null> {
+    // Se cachea el resultado: el import dinámico se intenta UNA vez, no en cada
+    // validación (si no está, seguiría fallando igual).
+    if (this.libxmljsCache !== undefined) {
+      return this.libxmljsCache;
+    }
     try {
       // Especificador no literal: `libxmljs2` es una dependencia OPCIONAL
       // (módulo nativo). Se evita la resolución estática de TS para que la
@@ -63,8 +77,10 @@ export class XmlValidatorAdapter implements XmlValidatorPort {
       // el import falla en runtime y se usa el fallback estructural.
       const moduleName = 'libxmljs2';
       const mod = (await import(moduleName)) as LibxmljsModule;
+      this.libxmljsCache = mod;
       return mod;
     } catch {
+      this.libxmljsCache = null;
       return null;
     }
   }

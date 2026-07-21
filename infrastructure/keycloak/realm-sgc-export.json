@@ -10,7 +10,6 @@
   "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
   "bruteForceProtected": true,
-
   "roles": {
     "realm": [
       {
@@ -30,9 +29,9 @@
       }
     ]
   },
-
-  "defaultRoles": ["Asistente"],
-
+  "defaultRoles": [
+    "Asistente"
+  ],
   "clients": [
     {
       "clientId": "sgc-frontend",
@@ -45,14 +44,15 @@
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
       "protocol": "openid-connect",
-      "rootUrl": "http://localhost:3005",
+      "rootUrl": "",
       "baseUrl": "/",
       "redirectUris": [
         "http://localhost:3005/*",
-        "http://localhost:3005/api/auth/callback/keycloak"
+        "https://aethelsoft.online/*"
       ],
       "webOrigins": [
-        "http://localhost:3005"
+        "http://localhost:3005",
+        "https://aethelsoft.online"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
@@ -77,7 +77,6 @@
       }
     }
   ],
-
   "users": [
     {
       "username": "admin-sgc",
@@ -93,7 +92,9 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["Administrador"]
+      "realmRoles": [
+        "Administrador"
+      ]
     },
     {
       "username": "contador-sgc",
@@ -109,9 +110,10 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["Contador"]
+      "realmRoles": [
+        "Contador"
+      ]
     }
   ],
-
   "passwordPolicy": "length(8) and notUsername and notEmail"
 }

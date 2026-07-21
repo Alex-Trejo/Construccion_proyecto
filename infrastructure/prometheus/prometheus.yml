@@ -41,3 +41,8 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets: ["host.docker.internal:3010"]
+
+  - job_name: "ms-sync"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:3012"]
