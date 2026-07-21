@@ -627,7 +627,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "sum by (app) (rate({app=~\".+\"} |~ `(?i)(error|warn)` [5m]))",
+          "expr": "sum by (app) (rate({app=~\".+\", level=~\"error|warn\"} [5m]))",
           "legendFormat": "{{app}}"
         }
       ]
@@ -820,7 +820,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{app=~\".+\"} |~ `(?i)(error|warn)`",
+          "expr": "{app=~\".+\", level=~\"error|warn\"}",
           "queryType": "range"
         }
       ]
