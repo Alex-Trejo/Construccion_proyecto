@@ -1,0 +1,45 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# SGC / FacturLink — Reverse proxy con TLS automático (Caddy).
+#
+# 1 dominio, 3 subdominios (crea un wildcard *.tudominio → EIP, o 3 registros A):
+#   {$APP_DOMAIN}       → frontend (Next.js) + /api/v1 → api-gateway
+#   {$AUTH_DOMAIN}      → Keycloak (login/SSO)
+#   {$GRAFANA_DOMAIN}   → Grafana (métricas + logs)
+#
+# Caddy provisiona el certificado HTTPS (Let's Encrypt) de cada uno
+# automáticamente en cuanto el DNS resuelve a la IP y 80/443 están abiertos.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── App (frontend + API) ─────────────────────────────────────────────────────
+{$APP_DOMAIN} {
+	encode gzip zstd
+
+	# Métricas Prometheus: NO exponer al público. Prometheus las scrapea por la
+	# red interna de Docker (api-gateway:3000). Desde fuera → 403.
+	handle /api/v1/metrics {
+		respond "Forbidden" 403
+	}
+
+	# API del backend (el gateway sirve bajo /api/v1).
+	handle /api/v1/* {
+		reverse_proxy api-gateway:3000
+	}
+
+	# Todo lo demás → Next.js (landing, dashboard y /api/auth de NextAuth).
+	handle {
+		reverse_proxy frontend:3005
+	}
+}
+
+# ── Keycloak (SSO) ───────────────────────────────────────────────────────────
+{$AUTH_DOMAIN} {
+	encode gzip zstd
+	reverse_proxy keycloak:8080
+}
+
+# ── Grafana (observabilidad — para presentar) ────────────────────────────────
+# Grafana tiene su propio login (GF_SECURITY_ADMIN_*). Se sirve con TLS.
+{$GRAFANA_DOMAIN} {
+	encode gzip zstd
+	reverse_proxy grafana:3000
+}
