@@ -43,6 +43,12 @@ Esta versión del SGC incluye todas las solicitudes y requerimientos funcionales
 - **Diseño Neo-Brutalista**: Construido con Next.js 15 (App Router) y Tailwind v4.
 - **SSO y Seguridad**: Autenticación delegada a Keycloak, gestión de sesiones y protección de rutas en el cliente y el servidor.
 
+### 6. Correcciones y Cambios Solicitados (Fixes)
+Durante la fase final se atendieron los siguientes requerimientos de calidad:
+- **Resolución de Linting (Frontend)**: Corrección de advertencias y errores críticos de ESLint, específicamente relacionados con dependencias de React Hooks (`exhaustive-deps`) y uso síncrono de estados en efectos (`set-state-in-effect`) en los módulos de configuración IMAP y listado de proveedores.
+- **Actualización de Mocks y Tests (Backend)**: Reparación de la suite de pruebas unitarias (Jest) en `@sgc/ms-core` y `@sgc/ms-sync`. Se actualizaron las expectativas de los tests para que coincidan con las nuevas firmas de métodos (ej. `findByMessageId`), y se ajustaron los argumentos de los mocks en los flujos de auto-aprovisionamiento y cronjobs.
+- **Optimización de Despliegue**: Ajustes en el `docker-compose.prod.yml` y configuración explícita de subdominios (`auth.`, `grafana.`, `prometheus.`) para el proxy reverso, asegurando un entorno de producción estable y seguro.
+
 ---
 
 ## 1. Prerrequisitos
