@@ -32,6 +32,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # Scripts de init (solo se ejecutan con el volumen VACÍO): crean la BD
+      # `keycloak` para la persistencia de Keycloak.
+      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -58,8 +61,20 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_HEALTH_ENABLED: "true"
       KC_METRICS_ENABLED: "true"
+      # ── Persistencia en PostgreSQL ──────────────────────────────────────────
+      # Keycloak guarda su estado (realm, clientes, usuarios, secretos) en una
+      # base dedicada `keycloak` del mismo Postgres. Así SOBREVIVE a recreaciones
+      # del contenedor (antes usaba H2 efímera y se perdía todo). El realm JSON
+      # se importa solo la PRIMERA vez (BD vacía); después manda la BD.
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KC_DB_NAME:-keycloak}
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./infrastructure/keycloak/realm-sgc-export.json:/opt/keycloak/data/import/realm-sgc-export.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200'"]
       interval: 15s
