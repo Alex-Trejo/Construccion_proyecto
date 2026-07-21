@@ -1,0 +1,32 @@
+# Prometheus — Configuración de scraping para SGC (PRODUCCIÓN)
+# En producción, las apps corren dentro de Docker, así que usamos los nombres
+# de servicio del compose en lugar de host.docker.internal.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "keycloak"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["keycloak:8080"]
+
+  - job_name: "loki"
+    static_configs:
+      - targets: ["loki:3100"]
+
+  # En producción las apps NestJS corren dentro de Docker (no en el host).
+  - job_name: "api-gateway"
+    metrics_path: /api/v1/metrics
+    static_configs:
+      - targets: ["api-gateway:3000"]
+
+  - job_name: "ms-core"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["ms-core:3010"]
