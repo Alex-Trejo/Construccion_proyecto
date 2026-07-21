@@ -45,7 +45,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "process_resident_memory_bytes{job=~\"api-gateway|ms-core\"}",
+          "expr": "process_resident_memory_bytes{job=~\"api-gateway|ms-core|ms-sync\"}",
           "legendFormat": "{{job}}"
         }
       ],
@@ -60,7 +60,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "rate(process_cpu_seconds_total{job=~\"api-gateway|ms-core\"}[1m])",
+          "expr": "rate(process_cpu_seconds_total{job=~\"api-gateway|ms-core|ms-sync\"}[1m])",
           "legendFormat": "{{job}}"
         }
       ],
@@ -75,7 +75,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "nodejs_eventloop_lag_seconds{job=~\"api-gateway|ms-core\"}",
+          "expr": "nodejs_eventloop_lag_seconds{job=~\"api-gateway|ms-core|ms-sync\"}",
           "legendFormat": "{{job}}"
         }
       ],
@@ -90,7 +90,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{app=~\"ms-core|api-gateway|ms-sync\"}"
+          "expr": "{app=~\".+\"}"
         }
       ],
       "options": {
