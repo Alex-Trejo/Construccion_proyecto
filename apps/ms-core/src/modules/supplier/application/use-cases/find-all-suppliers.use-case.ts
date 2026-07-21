@@ -19,7 +19,7 @@ export class FindAllSuppliersUseCase {
     private readonly supplierRepo: SupplierRepositoryPort,
   ) {}
 
-  async execute(): Promise<ReadonlyArray<Supplier>> {
-    return this.supplierRepo.findAll();
+  async execute(ownerId: string | null): Promise<ReadonlyArray<Supplier>> {
+    return this.supplierRepo.findAll(ownerId);
   }
 }

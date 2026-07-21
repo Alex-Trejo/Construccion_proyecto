@@ -15,6 +15,9 @@
  * @module @sgc/shared
  */
 
+// ── Utils ────────────────────────────────────────────────────────────────────
+export { normalizeInvoiceNumber } from './utils/invoice-number';
+
 // ── Enums ────────────────────────────────────────────────────────────────────
 export { DocumentStatus } from './enums/document-status.enum';
 export { DocumentType } from './enums/document-type.enum';
@@ -46,6 +49,44 @@ export type {
 } from './dtos/create-supplier.dto';
 
 export type { IUploadDocumentDto } from './dtos/upload-document.dto';
+export type { IUpdateSupplierDto } from './dtos/update-supplier.dto';
+
+export type {
+  ICreateDocumentItemDto,
+  ICreateDocumentTaxDto,
+  ICreateDocumentDto,
+  IDocumentItemDto,
+  IDocumentTaxDto,
+  IDocumentDto,
+  IUpdateDocumentDto,
+  IOcrResultDto,
+  IPaginatedDocuments,
+  IImportErrorDto,
+  ImportErrorKind,
+} from './dtos/document.dto';
+
+export type {
+  ICreateImapConfigDto,
+  IImapConfigDto,
+  IImapTestResultDto,
+  ISyncTriggerResult,
+  IImapActiveConfig,
+} from './dtos/imap-config.dto';
+
+export type {
+  IMetricByEstado,
+  IMetricByMes,
+  IDashboardMetrics,
+  IDashboardFilters,
+} from './dtos/report.dto';
+
+export type {
+  IUserDto,
+  ICreateUserDto,
+  IAssignRolesDto,
+  IRoleDto,
+  ICreateRoleDto,
+} from './dtos/user.dto';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 export {
@@ -54,6 +95,7 @@ export {
   SYNC_PATTERNS,
   COMMUNICATION_PATTERNS,
   IDENTITY_PATTERNS,
+  IMAP_PATTERNS,
   MICROSERVICE_TOKENS,
 } from './constants/message-patterns.constants';
 

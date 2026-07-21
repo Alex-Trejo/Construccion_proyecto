@@ -21,8 +21,11 @@ export class GetReceivedEmailDetailUseCase {
     private readonly emailRepo: ReceivedEmailRepositoryPort,
   ) {}
 
-  async execute(emailId: string): Promise<ReceivedEmail | null> {
+  async execute(
+    emailId: string,
+    ownerId: string | null,
+  ): Promise<ReceivedEmail | null> {
     this.logger.debug(`Buscando correo: ${emailId}`);
-    return this.emailRepo.findById(emailId);
+    return this.emailRepo.findById(emailId, ownerId);
   }
 }

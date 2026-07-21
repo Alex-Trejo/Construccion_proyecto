@@ -22,6 +22,8 @@ import { type ProcessedEmail } from '../../domain/ports/imap-client.port';
 
 /** Payload del evento TCP enviado a ms-core. */
 export interface DocumentReceivedPayload {
+  /** Dueño del correo (userId del JWT / keycloak sub) — aislamiento. */
+  readonly userId: string;
   /** Nombre original del archivo. */
   readonly filename: string;
   /** Extensión del archivo (xml o pdf). */
@@ -82,6 +84,7 @@ export class EmailProcessorService implements OnModuleInit {
    */
   async processEmails(
     emails: ReadonlyArray<ProcessedEmail>,
+    ownerId: string,
   ): Promise<ProcessingResult> {
     let eventsEmitted = 0;
     let eventsFailed = 0;
@@ -92,6 +95,7 @@ export class EmailProcessorService implements OnModuleInit {
         totalAttachments++;
 
         const payload: DocumentReceivedPayload = {
+          userId: ownerId,
           filename: attachment.filename,
           extension: attachment.extension,
           contentBase64: attachment.content.toString('base64'),

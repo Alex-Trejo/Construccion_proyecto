@@ -43,19 +43,69 @@ export class SriSoapApiAdapter implements SriSoapApiPort {
     this.logger.log(`Consultando SRI SOAP para clave: ${claveAcceso}`);
 
     const soapEnvelope = this.buildSoapEnvelope(claveAcceso);
-
-    const response = await this.httpClient.post<string>(
-      this.soapUrl,
-      soapEnvelope,
-      { responseType: 'text' },
-    );
-
-    const rawXml = response.data;
+    const rawXml = await this.postWithRetry(soapEnvelope, claveAcceso);
     return this.parseSoapResponse(rawXml, claveAcceso);
   }
 
   /**
-   * Construye el envelope SOAP para la consulta de autorización.
+   * POST al WS del SRI con reintentos ante errores de RED transitorios
+   * (DNS ENOTFOUND, timeouts, conexión reseteada) — habituales al consultar el
+   * SRI de producción. NO reintenta errores de negocio (no autorizado).
+   */
+  private async postWithRetry(
+    soapEnvelope: string,
+    claveAcceso: string,
+    maxAttempts = 4,
+  ): Promise<string> {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const response = await this.httpClient.post<string>(
+          this.soapUrl,
+          soapEnvelope,
+          { responseType: 'text' },
+        );
+        return response.data;
+      } catch (error) {
+        lastError = error;
+        if (!this.isTransientNetworkError(error) || attempt === maxAttempts) {
+          break;
+        }
+        const delayMs = 1000 * attempt; // backoff lineal: 1s, 2s, 3s
+        this.logger.warn(
+          `SRI intento ${attempt}/${maxAttempts} falló (${this.errMsg(error)}) para ${claveAcceso}. Reintentando en ${delayMs}ms…`,
+        );
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
+  }
+
+  /** ¿Es un error de red transitorio (merece reintento)? */
+  private isTransientNetworkError(error: unknown): boolean {
+    const code = (error as { code?: string })?.code ?? '';
+    const msg = this.errMsg(error);
+    return (
+      code === 'ENOTFOUND' ||
+      code === 'EAI_AGAIN' ||
+      code === 'ETIMEDOUT' ||
+      code === 'ECONNRESET' ||
+      code === 'ECONNABORTED' ||
+      /ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ECONNRESET|timeout/i.test(msg)
+    );
+  }
+
+  private errMsg(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+  }
+
+  /**
+   * Construye el envelope SOAP para la consulta de autorización de un
+   * comprobante individual por su clave de acceso.
+   *
+   * Operación correcta del WS "AutorizacionComprobantesOffline":
+   *   autorizacionComprobante(claveAccesoComprobante) → RespuestaAutorizacionComprobante
+   * (la operación `autorizacionComprobanteLote` es para lotes, no aplica aquí).
    */
   private buildSoapEnvelope(claveAcceso: string): string {
     return `<?xml version="1.0" encoding="UTF-8"?>
@@ -63,9 +113,9 @@ export class SriSoapApiAdapter implements SriSoapApiPort {
                   xmlns:ec="http://ec.gob.sri.ws.autorizacion">
   <soapenv:Header/>
   <soapenv:Body>
-    <ec:autorizacionComprobanteLote>
-      <claveAccesoLote>${claveAcceso}</claveAccesoLote>
-    </ec:autorizacionComprobanteLote>
+    <ec:autorizacionComprobante>
+      <claveAccesoComprobante>${claveAcceso}</claveAccesoComprobante>
+    </ec:autorizacionComprobante>
   </soapenv:Body>
 </soapenv:Envelope>`;
   }
@@ -84,7 +134,8 @@ export class SriSoapApiAdapter implements SriSoapApiPort {
 
     if (!autorizacionMatch) {
       throw new Error(
-        `SRI SOAP: No se encontró el tag <autorizacion> para clave ${claveAcceso}`,
+        `El SRI no devolvió autorización para la clave ${claveAcceso} ` +
+          `(no encontrada o no autorizada en el catálogo del SRI).`,
       );
     }
 

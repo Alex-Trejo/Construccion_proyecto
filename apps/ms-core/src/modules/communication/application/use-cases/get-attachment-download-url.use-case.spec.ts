@@ -30,7 +30,7 @@ describe('GetAttachmentDownloadUrlUseCase', () => {
     const result = await useCase.execute('email-1', 'att-1');
 
     expect(result).toBeNull();
-    expect(emailRepoMock.findById).toHaveBeenCalledWith('email-1');
+    expect(emailRepoMock.findById).toHaveBeenCalledWith('email-1', undefined);
   });
 
   it('should return null if attachment is not found in email', async () => {

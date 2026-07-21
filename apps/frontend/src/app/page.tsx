@@ -12,10 +12,13 @@
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
+import { LanguageToggle } from '@/components/LanguageToggle';
+import { useTranslation } from '@/lib/i18n/language-provider';
 
 export default function LandingPage() {
   const { status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const handleLogin = () => {
     if (status === 'authenticated') {
@@ -35,9 +38,14 @@ export default function LandingPage() {
           </span>
           <span className="text-xl font-bold tracking-tight">SGC</span>
         </div>
-        <Button variant="dark" onClick={handleLogin}>
-          {status === 'authenticated' ? 'Go to Dashboard' : 'Login'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <LanguageToggle />
+          <Button variant="dark" onClick={handleLogin}>
+            {status === 'authenticated'
+              ? t('landing.goDashboard')
+              : t('landing.login')}
+          </Button>
+        </div>
       </header>
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
@@ -45,33 +53,46 @@ export default function LandingPage() {
         <section className="grid items-center gap-12 py-12 md:grid-cols-2 md:py-20">
           <div className="animate-fade-in-up flex flex-col gap-6">
             <span className="brutal-badge w-fit bg-primary">
-              SRI · Ecuador
+              {t('landing.badge')}
             </span>
             <h1 className="text-5xl font-bold leading-tight tracking-tight md:text-6xl">
-              Smart management of{' '}
-              <span className="rounded-lg bg-primary px-2">electronic</span>{' '}
-              receipts
+              {t('landing.heroTitleA')}{' '}
+              <span className="rounded-lg bg-primary px-2">
+                {t('landing.heroTitleHighlight')}
+              </span>{' '}
+              {t('landing.heroTitleB')}
             </h1>
             <p className="max-w-md text-lg text-dark/70">
-              Automate the reception, validation and storage of your SRI
-              vouchers. Email-to-storage in one secure flow.
+              {t('landing.heroDesc')}
             </p>
             <div className="flex flex-wrap gap-4">
               <Button variant="primary" onClick={handleLogin}>
-                Get started →
+                {t('landing.getStarted')}
               </Button>
               <a href="#features">
-                <Button variant="secondary">Learn more</Button>
+                <Button variant="secondary">{t('landing.learnMore')}</Button>
               </a>
             </div>
           </div>
 
           <div className="brutal-card animate-fade-in-up bg-secondary p-8">
             <div className="flex flex-col gap-4">
-              <FeatureRow title="IMAP Sync" desc="Auto-fetch invoices from email" />
-              <FeatureRow title="XSD Validation" desc="Official SRI schemas" />
-              <FeatureRow title="Object Storage" desc="Secure MinIO buckets" />
-              <FeatureRow title="Keycloak SSO" desc="Enterprise authentication" />
+              <FeatureRow
+                title={t('landing.feat.imap.title')}
+                desc={t('landing.feat.imap.desc')}
+              />
+              <FeatureRow
+                title={t('landing.feat.xsd.title')}
+                desc={t('landing.feat.xsd.desc')}
+              />
+              <FeatureRow
+                title={t('landing.feat.storage.title')}
+                desc={t('landing.feat.storage.desc')}
+              />
+              <FeatureRow
+                title={t('landing.feat.sso.title')}
+                desc={t('landing.feat.sso.desc')}
+              />
             </div>
           </div>
         </section>
@@ -80,26 +101,26 @@ export default function LandingPage() {
         <section id="features" className="grid gap-6 py-12 md:grid-cols-3">
           <FeatureCard
             n="01"
-            title="Suppliers"
-            desc="Register natural & legal persons. Dynamic supplier codes via Factory Method."
+            title={t('landing.card.suppliers.title')}
+            desc={t('landing.card.suppliers.desc')}
             highlight
           />
           <FeatureCard
             n="02"
-            title="Communications"
-            desc="Browse received emails and download attachments straight from storage."
+            title={t('landing.card.communications.title')}
+            desc={t('landing.card.communications.desc')}
           />
           <FeatureCard
             n="03"
-            title="Pipeline"
-            desc="Sanitize, validate and parse SRI XML, then auto-provision entities."
+            title={t('landing.card.pipeline.title')}
+            desc={t('landing.card.pipeline.desc')}
           />
         </section>
       </main>
 
       <footer className="border-t-2 border-black">
         <div className="mx-auto max-w-6xl px-6 py-8 text-sm text-dark/60">
-          © {new Date().getFullYear()} SGC — Sistema de Gestión de Comprobantes
+          {t('landing.footer', { year: new Date().getFullYear() })}
         </div>
       </footer>
     </div>

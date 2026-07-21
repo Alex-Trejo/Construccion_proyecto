@@ -32,6 +32,7 @@ import { PersonaNaturalSupplier } from '../entities/persona-natural-supplier.ent
 import { PersonaJuridicaSupplier } from '../entities/persona-juridica-supplier.entity';
 import { Ruc } from '../value-objects/ruc.vo';
 import { SupplierCode } from '../value-objects/supplier-code.vo';
+import { DomainValidationError } from '../errors/domain-validation.error';
 
 export class SupplierFactory {
   /**
@@ -57,9 +58,13 @@ export class SupplierFactory {
    * // supplier.supplierCode.value → "PROV-NAT-2026-a1b2c3d4"
    * ```
    */
-  public static create(dto: ICreateSupplierDto): Supplier {
+  public static create(
+    dto: ICreateSupplierDto,
+    ownerId: string | null,
+  ): Supplier {
     const id = randomUUID();
     const ruc = Ruc.create(dto.taxId);
+    SupplierFactory.validatePhone(dto.phone);
     // El código se deriva de los datos ingresados (tipo + RUC/Cédula).
     const supplierCode = SupplierCode.generate(dto.supplierType, ruc.value);
     const now = new Date();
@@ -67,12 +72,12 @@ export class SupplierFactory {
     switch (dto.supplierType) {
       case SupplierType.PERSONA_NATURAL:
         return SupplierFactory.createPersonaNatural(
-          id, supplierCode, ruc, now, dto,
+          id, ownerId, supplierCode, ruc, now, dto,
         );
 
       case SupplierType.PERSONA_JURIDICA:
         return SupplierFactory.createPersonaJuridica(
-          id, supplierCode, ruc, now, dto,
+          id, ownerId, supplierCode, ruc, now, dto,
         );
 
       default: {
@@ -86,15 +91,45 @@ export class SupplierFactory {
     }
   }
 
+  /**
+   * Valida que el teléfono, si se proporciona, contenga solo dígitos
+   * (7 a 10 dígitos). Campo opcional: se permite vacío.
+   *
+   * @throws {Error} Si el teléfono contiene caracteres no numéricos o
+   *   una longitud fuera de rango.
+   */
+  private static validatePhone(phone: string | undefined): void {
+    const sanitized = (phone ?? '').trim();
+    if (sanitized === '') {
+      return;
+    }
+    if (!/^\d{7,10}$/.test(sanitized)) {
+      throw new DomainValidationError(
+        `Teléfono inválido: "${sanitized}". Debe contener solo números (7 a 10 dígitos).`,
+      );
+    }
+  }
+
   private static createPersonaNatural(
     id: string,
+    ownerId: string | null,
     supplierCode: SupplierCode,
     ruc: Ruc,
     now: Date,
     dto: ICreatePersonaNaturalDto,
   ): PersonaNaturalSupplier {
+    // La cédula de una persona natural debe ser exactamente 10 dígitos.
+    // Reutiliza la validación numérica + dígito verificador del VO Ruc.
+    const cedulaVo = Ruc.create(dto.cedula);
+    if (!cedulaVo.isCedula) {
+      throw new DomainValidationError(
+        `Cédula inválida: "${dto.cedula}". Debe contener exactamente 10 dígitos numéricos.`,
+      );
+    }
+
     return new PersonaNaturalSupplier({
       id,
+      ownerId,
       supplierCode,
       supplierType: SupplierType.PERSONA_NATURAL,
       ruc,
@@ -112,6 +147,7 @@ export class SupplierFactory {
 
   private static createPersonaJuridica(
     id: string,
+    ownerId: string | null,
     supplierCode: SupplierCode,
     ruc: Ruc,
     now: Date,
@@ -119,6 +155,7 @@ export class SupplierFactory {
   ): PersonaJuridicaSupplier {
     return new PersonaJuridicaSupplier({
       id,
+      ownerId,
       supplierCode,
       supplierType: SupplierType.PERSONA_JURIDICA,
       ruc,

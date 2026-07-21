@@ -34,10 +34,10 @@ describe('CreateSupplierUseCase', () => {
         firstName: 'John',
         lastName: 'Doe',
         cedula: '1700000000',
-      })
+      }, 'owner-1')
     ).rejects.toThrow(ConflictException);
 
-    expect(supplierRepoMock.existsByTaxId).toHaveBeenCalledWith('1700000000');
+    expect(supplierRepoMock.existsByTaxId).toHaveBeenCalledWith('1700000000', 'owner-1');
     expect(supplierRepoMock.save).not.toHaveBeenCalled();
   });
 
@@ -63,11 +63,11 @@ describe('CreateSupplierUseCase', () => {
     jest.spyOn(SupplierFactory, 'create').mockReturnValue(mockSupplier as any);
     supplierRepoMock.save.mockResolvedValue(mockSupplier);
 
-    const result = await useCase.execute(dto as any);
+    const result = await useCase.execute(dto as any, 'owner-1');
 
     expect(result).toBeDefined();
     expect(result.ruc.value).toBe('1790000000001');
-    expect(supplierRepoMock.existsByTaxId).toHaveBeenCalledWith('1790000000001');
+    expect(supplierRepoMock.existsByTaxId).toHaveBeenCalledWith('1790000000001', 'owner-1');
     expect(supplierRepoMock.save).toHaveBeenCalled();
   });
 });

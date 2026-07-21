@@ -170,6 +170,34 @@ export const configValidationSchema = Joi.object({
       'any.required': 'MS_CORE_HTTP_PORT es obligatorio. Ej: 3010',
       'number.port': 'MS_CORE_HTTP_PORT debe ser un puerto válido (1-65535)',
     }),
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // OPENAI — OCR de comprobantes físicos (Vision API)
+  // ───────────────────────────────────────────────────────────────────────────
+  OPENAI_API_KEY: Joi.string()
+    .min(1)
+    .required()
+    .messages({
+      'any.required': 'OPENAI_API_KEY es obligatorio para el OCR (Fase C).',
+    }),
+
+  OPENAI_OCR_MODEL: Joi.string()
+    .min(1)
+    .required()
+    .messages({
+      'any.required': 'OPENAI_OCR_MODEL es obligatorio. Ej: gpt-4o-mini',
+    }),
+
+  // Cifrado simétrico de credenciales IMAP (Fase D). 64 hex = 32 bytes.
+  ENCRYPTION_KEY: Joi.string()
+    .length(64)
+    .hex()
+    .required()
+    .messages({
+      'any.required': 'ENCRYPTION_KEY es obligatorio (64 hex = 32 bytes).',
+      'string.length': 'ENCRYPTION_KEY debe tener 64 caracteres hex.',
+      'string.hex': 'ENCRYPTION_KEY debe ser hexadecimal.',
+    }),
 });
 
 /**

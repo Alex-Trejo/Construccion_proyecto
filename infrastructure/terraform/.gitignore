@@ -1,0 +1,7 @@
+# Estado y secretos de Terraform — NUNCA commitear.
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+crash.log

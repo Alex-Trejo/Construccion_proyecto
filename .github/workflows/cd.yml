@@ -53,10 +53,37 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  deploy:
+    name: Deploy a EC2 (pull GHCR)
+    runs-on: ubuntu-latest
+    needs: build-push
+    # Solo despliega en main (qa solo publica imágenes). Si build-push falla,
+    # este job NO corre → "sin errores → deploy".
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: SSH a la instancia y actualizar el stack
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: GHCR_USER,GHCR_TOKEN
+          script: |
+            set -e
+            cd /opt/facturlink
+            git pull --ff-only || true
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+            docker image prune -f
+        env:
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
   notify:
     name: Notificar Telegram
     runs-on: ubuntu-latest
-    needs: build-push
+    needs: [build-push, deploy]
     if: always()
     env:
       TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -64,19 +91,22 @@ jobs:
       REPO: ${{ github.repository }}
       REF: ${{ github.ref_name }}
       ACTOR: ${{ github.actor }}
-      RESULT: ${{ needs.build-push.result }}
+      BUILD_RESULT: ${{ needs.build-push.result }}
+      DEPLOY_RESULT: ${{ needs.deploy.result }}
     steps:
       - name: Enviar mensaje
         run: |
           if [ -z "$TG_TOKEN" ] || [ -z "$TG_CHAT" ]; then
             echo "Secrets TELEGRAM_* ausentes; se omite la notificación."; exit 0
           fi
-          if [ "$RESULT" = "success" ]; then 
-            ICON="🚀"
-            TXT="Imágenes publicadas en GHCR"
-          else 
-            ICON="❌"
-            TXT="Falló el despliegue"
+          if [ "$BUILD_RESULT" != "success" ]; then
+            ICON="❌"; TXT="Falló el build/push de imágenes"
+          elif [ "$DEPLOY_RESULT" = "success" ]; then
+            ICON="🚀"; TXT="Desplegado a producción (EC2)"
+          elif [ "$DEPLOY_RESULT" = "failure" ]; then
+            ICON="⚠️"; TXT="Imágenes OK, pero falló el deploy a EC2"
+          else
+            ICON="📦"; TXT="Imágenes publicadas en GHCR"
           fi
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           MSG=$(printf "%s <b>CD: %s</b>\n<b>Repo:</b> %s\n<b>Rama:</b> %s\n<b>Commit:</b> %s\n<b>Autor:</b> %s\n<a href=\"%s\">🔍 Ver detalles / logs</a>" \

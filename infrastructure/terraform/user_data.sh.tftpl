@@ -1,0 +1,47 @@
+#!/bin/bash
+# ─────────────────────────────────────────────────────────────────────────────
+# cloud-init: prepara la instancia para levantar SGC/FacturLink.
+#   - Instala Docker Engine + plugin compose.
+#   - Clona el repositorio en /opt/facturlink.
+#   - NO arranca el stack todavía: falta el .env con secretos (paso manual).
+# ─────────────────────────────────────────────────────────────────────────────
+set -euxo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y
+apt-get install -y ca-certificates curl git gnupg
+
+# ── Docker Engine + Compose plugin (repo oficial) ────────────────────────────
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
+apt-get update -y
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+systemctl enable --now docker
+usermod -aG docker ubuntu
+
+# ── Clonar el proyecto ───────────────────────────────────────────────────────
+mkdir -p /opt/facturlink
+git clone "${repo_url}" /opt/facturlink || (cd /opt/facturlink && git pull)
+chown -R ubuntu:ubuntu /opt/facturlink
+
+# ── Instrucciones para el operador ───────────────────────────────────────────
+cat > /opt/facturlink/SIGUIENTE_PASO.txt <<'EOF'
+Instancia lista. Para levantar el stack:
+
+  cd /opt/facturlink
+  cp .env.production.example .env
+  nano .env            # completar dominios y SECRETOS nuevos (ver DEPLOY.md)
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+Verifica:
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+  # https://<APP_DOMAIN>   https://<AUTH_DOMAIN>   https://<GRAFANA_DOMAIN>
+EOF
+chown ubuntu:ubuntu /opt/facturlink/SIGUIENTE_PASO.txt
+
+echo "cloud-init completado."

@@ -29,6 +29,10 @@ export class IncomingInvoiceOrmEntity {
   @Column({ name: 'estado', type: 'varchar', length: 30 })
   estado!: string;
 
+  @Index('idx_incoming_invoices_owner')
+  @Column({ name: 'owner_id', type: 'varchar', length: 255, nullable: true })
+  ownerId!: string | null;
+
   @Column({ name: 'origen', type: 'varchar', length: 20 })
   origen!: string;
 

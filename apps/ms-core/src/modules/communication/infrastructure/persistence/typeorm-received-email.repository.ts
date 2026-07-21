@@ -9,7 +9,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, type FindOptionsWhere } from 'typeorm';
 
 import {
   type ReceivedEmailRepositoryPort,
@@ -37,6 +37,9 @@ export class TypeOrmReceivedEmailRepository implements ReceivedEmailRepositoryPo
     return this.toDomain(saved);
   }
 
+  // Correos COMPARTIDOS a nivel empresa (single-tenant): las lecturas no filtran
+  // por dueño y el dedup por Message-ID es global. `owner_id` = auditoría (save).
+
   async findPaginated(params: PaginationParams): Promise<PaginatedEmails> {
     const { page, limit } = params;
     const skip = (page - 1) * limit;
@@ -57,9 +60,9 @@ export class TypeOrmReceivedEmailRepository implements ReceivedEmailRepositoryPo
     };
   }
 
-  async findById(id: string): Promise<ReceivedEmail | null> {
+  async findById(id: string, _ownerId: string | null): Promise<ReceivedEmail | null> {
     const schema = await this.emailRepository.findOne({
-      where: { id },
+      where: { id } as FindOptionsWhere<ReceivedEmailOrmEntity>,
       relations: ['attachments'],
     });
 
@@ -67,11 +70,26 @@ export class TypeOrmReceivedEmailRepository implements ReceivedEmailRepositoryPo
     return this.toDomain(schema);
   }
 
-  async existsByMessageId(messageId: string): Promise<boolean> {
+  /** Dedup GLOBAL por Message-ID (un correo = un registro para la empresa). */
+  async existsByMessageId(
+    messageId: string,
+    _ownerId: string | null,
+  ): Promise<boolean> {
     const count = await this.emailRepository.count({
-      where: { emailMessageId: messageId },
+      where: { emailMessageId: messageId } as FindOptionsWhere<ReceivedEmailOrmEntity>,
     });
     return count > 0;
+  }
+
+  async findByMessageId(
+    messageId: string,
+    _ownerId: string | null,
+  ): Promise<ReceivedEmail | null> {
+    const schema = await this.emailRepository.findOne({
+      where: { emailMessageId: messageId } as FindOptionsWhere<ReceivedEmailOrmEntity>,
+      relations: ['attachments'],
+    });
+    return schema ? this.toDomain(schema) : null;
   }
 
   // ── Mappers: Domain ↔ Schema ─────────────────────────────────────────────
@@ -79,6 +97,7 @@ export class TypeOrmReceivedEmailRepository implements ReceivedEmailRepositoryPo
   private toSchema(domain: ReceivedEmail): ReceivedEmailOrmEntity {
     const schema = new ReceivedEmailOrmEntity();
     schema.id = domain.id;
+    schema.ownerId = domain.ownerId;
     schema.emailFrom = domain.emailFrom;
     schema.emailSubject = domain.emailSubject;
     schema.emailDate = domain.emailDate;
@@ -118,6 +137,7 @@ export class TypeOrmReceivedEmailRepository implements ReceivedEmailRepositoryPo
 
     return new ReceivedEmail({
       id: schema.id,
+      ownerId: schema.ownerId,
       emailFrom: schema.emailFrom,
       emailSubject: schema.emailSubject,
       emailDate: schema.emailDate,

@@ -17,18 +17,24 @@ import {
 } from 'typeorm';
 
 @Entity('suppliers')
+// Unicidad por dueño: cada usuario puede tener su propio proveedor con un RUC.
+@Index('idx_suppliers_owner_ruc', ['ownerId', 'ruc'], { unique: true })
 export class SupplierOrmEntity {
   @PrimaryColumn('uuid')
   id!: string;
 
-  @Column({ name: 'supplier_code', type: 'varchar', length: 20, unique: true })
+  // Dueño del registro (userId/keycloak sub) — aislamiento multi-tenant.
+  @Index('idx_suppliers_owner')
+  @Column({ name: 'owner_id', type: 'varchar', length: 255, nullable: true })
+  ownerId!: string | null;
+
+  @Column({ name: 'supplier_code', type: 'varchar', length: 20 })
   supplierCode!: string;
 
   @Column({ name: 'supplier_type', type: 'varchar', length: 30 })
   supplierType!: string;
 
-  @Index('idx_suppliers_ruc', { unique: true })
-  @Column({ name: 'ruc', type: 'varchar', length: 13, unique: true })
+  @Column({ name: 'ruc', type: 'varchar', length: 13 })
   ruc!: string;
 
   @Column({ name: 'razon_social', type: 'varchar', length: 300 })

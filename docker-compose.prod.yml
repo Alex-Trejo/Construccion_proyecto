@@ -1,0 +1,112 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# SGC / FacturLink — Overlay de PRODUCCIÓN.
+#
+# Levanta las 4 apps (frontend, api-gateway, ms-core, ms-sync) + Caddy (TLS),
+# sobre la misma red `sgc-network` que la infraestructura del compose base.
+#
+# Uso:
+#   cp .env.production.example .env        # y completar TODOS los valores
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Requisitos:
+#   - Un dominio público apuntando al servidor (para el TLS automático de Caddy).
+#   - Puertos 80 y 443 abiertos hacia el servidor.
+#   - Las vars NEXT_PUBLIC_* del frontend son de BUILD: si cambian, reconstruir
+#     la imagen del frontend (--build).
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ── Overrides de PRODUCCIÓN para servicios del compose base ─────────────────
+  # Keycloak detrás del proxy (TLS lo termina Caddy) con su hostname público.
+  keycloak:
+    command: start-dev --import-realm --hostname=${AUTH_DOMAIN} --proxy=edge
+
+  # Grafana servida en su subdominio.
+  grafana:
+    environment:
+      GF_SERVER_ROOT_URL: https://${GRAFANA_DOMAIN}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+
+  # ── Aplicaciones ────────────────────────────────────────────────────────────
+  # Cada servicio usa la imagen de GHCR (la instancia hace `pull` en el CD) y
+  # además define `build:` como fallback para construir localmente (`up --build`).
+  ms-core:
+    image: ghcr.io/${GHCR_OWNER}/sgc-ms-core:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: apps/ms-core/Dockerfile
+    container_name: sgc-ms-core
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - postgres
+      - minio
+    networks:
+      - sgc-network
+
+  ms-sync:
+    image: ghcr.io/${GHCR_OWNER}/sgc-ms-sync:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: apps/ms-sync/Dockerfile
+    container_name: sgc-ms-sync
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - ms-core
+    networks:
+      - sgc-network
+
+  api-gateway:
+    image: ghcr.io/${GHCR_OWNER}/sgc-api-gateway:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    container_name: sgc-api-gateway
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - ms-core
+      - keycloak
+    networks:
+      - sgc-network
+
+  frontend:
+    image: ghcr.io/${GHCR_OWNER}/sgc-frontend:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    container_name: sgc-frontend
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - api-gateway
+    networks:
+      - sgc-network
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: sgc-caddy
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      AUTH_DOMAIN: ${AUTH_DOMAIN}
+      GRAFANA_DOMAIN: ${GRAFANA_DOMAIN}
+    volumes:
+      - ./infrastructure/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
+      - api-gateway
+    networks:
+      - sgc-network
+
+volumes:
+  caddy-data:
+  caddy-config:

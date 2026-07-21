@@ -101,6 +101,7 @@ export class XmlSriParserAdapter implements XmlSriParserPort {
       accessKey: this.str(infoTributaria['claveAcceso']),
       documentType,
       issuerTaxId: this.str(infoTributaria['ruc']),
+      serialNumber: this.buildSerialNumber(infoTributaria),
       issuerName: this.str(infoTributaria['razonSocial']),
       issuerAddress: this.str(infoTributaria['dirMatriz']),
       issueDate: this.str(
@@ -158,6 +159,18 @@ export class XmlSriParserAdapter implements XmlSriParserPort {
       const node = this.asNode(imp);
       return sum + (node ? this.num(node['valor']) : 0);
     }, 0);
+  }
+
+  /**
+   * Construye el número del comprobante "estab-ptoEmi-secuencial" a partir de
+   * infoTributaria (p. ej. 001-002-000384367). Rellena con ceros a la izquierda.
+   */
+  private buildSerialNumber(infoTributaria: XmlNode): string {
+    const estab = this.str(infoTributaria['estab']).padStart(3, '0');
+    const ptoEmi = this.str(infoTributaria['ptoEmi']).padStart(3, '0');
+    const secuencial = this.str(infoTributaria['secuencial']).padStart(9, '0');
+    if (!estab && !ptoEmi && !secuencial) return '';
+    return `${estab}-${ptoEmi}-${secuencial}`;
   }
 
   private extractItems(root: XmlNode): ReadonlyArray<SriDocumentItem> {

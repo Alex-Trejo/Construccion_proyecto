@@ -45,7 +45,8 @@ describe('SupplierController', () => {
       const expectedResponse = { id: '1', ...dto };
       clientProxyMock.send.mockReturnValue(of(expectedResponse));
 
-      const result = await controller.create(dto as any);
+      const mockUser = { userId: 'user-123' } as any;
+      const result = await controller.create(dto as any, mockUser);
 
       expect(result).toEqual(expectedResponse);
       expect(clientProxyMock.send).toHaveBeenCalled();
@@ -57,7 +58,8 @@ describe('SupplierController', () => {
       const expectedResponse = [{ id: '1' }, { id: '2' }];
       clientProxyMock.send.mockReturnValue(of(expectedResponse));
 
-      const result = await controller.findAll();
+      const mockUser = { userId: 'user-123' } as any;
+      const result = await controller.findAll(mockUser);
 
       expect(result).toEqual(expectedResponse);
       expect(clientProxyMock.send).toHaveBeenCalled();

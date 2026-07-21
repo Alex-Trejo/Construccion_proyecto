@@ -26,11 +26,17 @@ import { SupplierOrmEntity } from '../modules/supplier/infrastructure/persistenc
 import { IncomingInvoiceOrmEntity } from '../modules/document/infrastructure/persistence/incoming-invoice.orm-entity';
 import { CompanyOrmEntity } from '../modules/supplier/infrastructure/persistence/company.orm-entity';
 import { TipoComprobanteOrmEntity } from '../modules/document/infrastructure/persistence/tipo-comprobante.orm-entity';
+import { DocumentOrmEntity } from '../modules/document/infrastructure/persistence/document.orm-entity';
+import { DocumentItemOrmEntity } from '../modules/document/infrastructure/persistence/document-item.orm-entity';
+import { DocumentTaxOrmEntity } from '../modules/document/infrastructure/persistence/document-tax.orm-entity';
 
 // ── Identity entities (Shadow Tables de Keycloak) ────────────────────────────
 import { RolOrmEntity } from '../modules/identity/infrastructure/persistence/rol.orm-entity';
 import { PersonaOrmEntity } from '../modules/identity/infrastructure/persistence/persona.orm-entity';
 import { UsuarioOrmEntity } from '../modules/identity/infrastructure/persistence/usuario.orm-entity';
+
+// ── IMAP config entities ──────────────────────────────────────────────────────
+import { ImapConfigOrmEntity } from '../modules/imap-config/infrastructure/persistence/imap-config.orm-entity';
 
 @Module({
   imports: [
@@ -55,6 +61,11 @@ import { UsuarioOrmEntity } from '../modules/identity/infrastructure/persistence
           // Document
           IncomingInvoiceOrmEntity,
           TipoComprobanteOrmEntity,
+          DocumentOrmEntity,
+          DocumentItemOrmEntity,
+          DocumentTaxOrmEntity,
+          // IMAP
+          ImapConfigOrmEntity,
           // Identity (Shadow Tables de Keycloak — Rúbrica 3.1)
           RolOrmEntity,
           PersonaOrmEntity,

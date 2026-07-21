@@ -52,8 +52,11 @@ export class ProcessTxtBatchUseCase {
    * @param txtContent - Contenido del archivo TXT como string.
    * @returns Resultado con métricas del procesamiento.
    */
-  async execute(txtContent: string): Promise<ProcessTxtBatchResult> {
-    this.logger.log('Iniciando procesamiento de TXT batch');
+  async execute(
+    txtContent: string,
+    ownerId: string | null = null,
+  ): Promise<ProcessTxtBatchResult> {
+    this.logger.log(`Iniciando procesamiento de TXT batch (owner=${ownerId})`);
 
     // ── Paso 1: Extraer todas las secuencias de 49 dígitos ────────────────
     const allKeys = this.extractAccessKeys(txtContent);
@@ -94,6 +97,7 @@ export class ProcessTxtBatchUseCase {
         xmlLimpio: null,
         errorMessage: null,
         intentos: 0,
+        ownerId,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
