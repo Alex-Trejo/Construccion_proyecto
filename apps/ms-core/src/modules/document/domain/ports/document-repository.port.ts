@@ -3,7 +3,13 @@
  * @module DocumentRepositoryPort
  */
 
-import type { ICreateDocumentDto, IDocumentDto } from '@sgc/shared';
+import type {
+  DocumentStatus,
+  IDashboardFilters,
+  ICreateDocumentDto,
+  IDocumentDto,
+  IUpdateDocumentDto,
+} from '@sgc/shared';
 
 export interface DocumentRepositoryPort {
   /** Guarda un comprobante con sus items e impuestos (cascade). */
@@ -22,6 +28,33 @@ export interface DocumentRepositoryPort {
 
   /** Detalle por id (incluye items e impuestos), restringido al dueño. */
   findById(id: string, ownerId: string | null): Promise<IDocumentDto | null>;
+
+  /** Documentos del dueño en cualquiera de los estados indicados. */
+  findByStatuses(
+    ownerId: string | null,
+    estados: ReadonlyArray<DocumentStatus>,
+  ): Promise<IDocumentDto[]>;
+
+  /** Documentos del dueño para exportar, con filtros opcionales (fecha/tipo). */
+  findForExport(
+    ownerId: string | null,
+    filters?: IDashboardFilters,
+  ): Promise<IDocumentDto[]>;
+
+  /** Actualiza el estado (y observaciones) de un comprobante del dueño. */
+  updateStatus(
+    id: string,
+    ownerId: string | null,
+    estado: DocumentStatus,
+    observaciones: string | null,
+  ): Promise<IDocumentDto | null>;
+
+  /** Edita los datos de un comprobante (montos, ítems, impuestos). */
+  updateDocument(
+    id: string,
+    ownerId: string | null,
+    dto: IUpdateDocumentDto,
+  ): Promise<IDocumentDto | null>;
 
   /** Unicidad estricta: ¿el dueño ya tiene este RUC + número de factura? */
   existsByNumero(

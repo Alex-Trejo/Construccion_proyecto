@@ -12,6 +12,10 @@ import { TypeOrmImapConfigRepository } from './infrastructure/persistence/typeor
 import {
   SaveImapConfigUseCase,
   ListActiveImapConfigsUseCase,
+  GetImapConfigUseCase,
+  DeleteImapConfigUseCase,
+  SetImapActiveUseCase,
+  TestImapConnectionUseCase,
 } from './application/imap-config.use-cases';
 import { ImapConfigTcpController } from './presentation/imap-config-tcp.controller';
 
@@ -25,6 +29,10 @@ import { ImapConfigTcpController } from './presentation/imap-config-tcp.controll
     },
     SaveImapConfigUseCase,
     ListActiveImapConfigsUseCase,
+    GetImapConfigUseCase,
+    DeleteImapConfigUseCase,
+    SetImapActiveUseCase,
+    TestImapConnectionUseCase,
   ],
 })
 export class ImapConfigModule {}

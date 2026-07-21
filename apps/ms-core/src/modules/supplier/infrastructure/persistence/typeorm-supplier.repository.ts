@@ -10,7 +10,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository, type FindOptionsWhere } from 'typeorm';
+import { Repository, type FindOptionsWhere } from 'typeorm';
 import { SupplierType } from '@sgc/shared';
 
 import { type SupplierRepositoryPort } from '../../domain/ports/supplier-repository.port';
@@ -30,10 +30,9 @@ export class TypeOrmSupplierRepository implements SupplierRepositoryPort {
     private readonly repository: Repository<SupplierOrmEntity>,
   ) {}
 
-  /** Predicado de dueño (maneja null = registros del sistema). */
-  private owner(ownerId: string | null): string | ReturnType<typeof IsNull> {
-    return ownerId === null ? IsNull() : ownerId;
-  }
+  // Catálogo de proveedores COMPARTIDO a nivel empresa (single-tenant): las
+  // lecturas y la unicidad NO filtran por dueño. `owner_id` se conserva solo
+  // como auditoría (quién lo creó, en `save`). Permisos → RBAC del gateway.
 
   async save(supplier: Supplier): Promise<Supplier> {
     const saved = await this.repository.save(this.toSchema(supplier));
@@ -41,29 +40,22 @@ export class TypeOrmSupplierRepository implements SupplierRepositoryPort {
     return this.toDomain(saved);
   }
 
-  async findById(id: string, ownerId: string | null): Promise<Supplier | null> {
-    const schema = await this.repository.findOne({
-      where: { id, ownerId: this.owner(ownerId) } as FindOptionsWhere<SupplierOrmEntity>,
-    });
+  async findById(id: string, _ownerId: string | null): Promise<Supplier | null> {
+    const schema = await this.repository.findOne({ where: { id } });
     return schema ? this.toDomain(schema) : null;
   }
 
   async findByTaxId(
     taxId: string,
-    ownerId: string | null,
+    _ownerId: string | null,
   ): Promise<Supplier | null> {
-    const schema = await this.repository.findOne({
-      where: { ruc: taxId, ownerId: this.owner(ownerId) } as FindOptionsWhere<SupplierOrmEntity>,
-    });
+    const schema = await this.repository.findOne({ where: { ruc: taxId } });
     return schema ? this.toDomain(schema) : null;
   }
 
-  async findAll(ownerId: string | null): Promise<ReadonlyArray<Supplier>> {
+  async findAll(_ownerId: string | null): Promise<ReadonlyArray<Supplier>> {
     const schemas = await this.repository.find({
-      where: {
-        isActive: true,
-        ownerId: this.owner(ownerId),
-      } as FindOptionsWhere<SupplierOrmEntity>,
+      where: { isActive: true } as FindOptionsWhere<SupplierOrmEntity>,
       order: { createdAt: 'DESC' },
     });
     return schemas.map((s) => this.toDomain(s));
@@ -72,10 +64,9 @@ export class TypeOrmSupplierRepository implements SupplierRepositoryPort {
   async findPaginated(
     page: number,
     limit: number,
-    ownerId: string | null,
+    _ownerId: string | null,
   ): Promise<[ReadonlyArray<Supplier>, number]> {
     const [schemas, total] = await this.repository.findAndCount({
-      where: { ownerId: this.owner(ownerId) } as FindOptionsWhere<SupplierOrmEntity>,
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
@@ -88,18 +79,14 @@ export class TypeOrmSupplierRepository implements SupplierRepositoryPort {
     return this.toDomain(saved);
   }
 
-  async deactivate(id: string, ownerId: string | null): Promise<void> {
-    await this.repository.update(
-      { id, ownerId: this.owner(ownerId) } as FindOptionsWhere<SupplierOrmEntity>,
-      { isActive: false },
-    );
+  async deactivate(id: string, _ownerId: string | null): Promise<void> {
+    await this.repository.update({ id }, { isActive: false });
     this.logger.debug(`Proveedor desactivado: ${id}`);
   }
 
-  async existsByTaxId(taxId: string, ownerId: string | null): Promise<boolean> {
-    const count = await this.repository.count({
-      where: { ruc: taxId, ownerId: this.owner(ownerId) } as FindOptionsWhere<SupplierOrmEntity>,
-    });
+  /** Unicidad GLOBAL (empresa): un RUC no se repite, lo cree quien lo cree. */
+  async existsByTaxId(taxId: string, _ownerId: string | null): Promise<boolean> {
+    const count = await this.repository.count({ where: { ruc: taxId } });
     return count > 0;
   }
 

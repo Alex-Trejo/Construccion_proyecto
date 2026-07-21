@@ -31,6 +31,7 @@ import { SriSoapApiAdapter } from './infrastructure/adapters/sri-soap-api.adapte
 import { SriRestApiAdapter } from './infrastructure/adapters/sri-rest-api.adapter';
 import { XmlSriParserAdapter } from './infrastructure/adapters/xml-sri-parser.adapter';
 import { OpenAiOcrAdapter } from './infrastructure/adapters/openai-ocr.adapter';
+import { RidePdfGenerator } from './infrastructure/adapters/ride-pdf.generator';
 import { IncomingInvoiceOrmEntity } from './infrastructure/persistence/incoming-invoice.orm-entity';
 import { TypeOrmIncomingInvoiceRepository } from './infrastructure/persistence/typeorm-incoming-invoice.repository';
 import { TypeOrmCompanyRepository } from './infrastructure/persistence/typeorm-company.repository';
@@ -46,8 +47,20 @@ import { FetchAndSanitizeXmlUseCase } from './application/use-cases/fetch-and-sa
 import { ProcessSriXmlUseCase } from './application/use-cases/process-sri-xml.use-case';
 import { AutoProvisionEntitiesUseCase } from './application/use-cases/auto-provision-entities.use-case';
 import { ProcessTxtBatchUseCase } from './application/use-cases/process-txt-batch.use-case';
+import { ImportSriDocumentsUseCase } from './application/use-cases/import-sri-documents.use-case';
+import { PersistParsedDocumentUseCase } from './application/use-cases/persist-parsed-document.use-case';
+import {
+  ValidateDocumentUseCase,
+  ValidatePendingDocumentsUseCase,
+  AdvanceDocumentStatusUseCase,
+} from './application/use-cases/validate-document.use-case';
+import { ListImportErrorsUseCase } from './application/use-cases/list-import-errors.use-case';
+import { DocumentValidationService } from './domain/services/document-validation.service';
 import { ProcessPhysicalDocumentUseCase } from './application/use-cases/process-physical-document.use-case';
-import { CreateDocumentUseCase } from './application/use-cases/create-document.use-case';
+import {
+  CreateDocumentUseCase,
+  UpdateDocumentUseCase,
+} from './application/use-cases/create-document.use-case';
 import {
   FindDocumentsUseCase,
   FindDocumentByIdUseCase,
@@ -120,8 +133,17 @@ import { SupplierModule } from '../supplier/supplier.module';
     ProcessSriXmlUseCase,
     AutoProvisionEntitiesUseCase,
     ProcessTxtBatchUseCase,
+    ImportSriDocumentsUseCase,
+    PersistParsedDocumentUseCase,
+    RidePdfGenerator,
+    DocumentValidationService,
+    ValidateDocumentUseCase,
+    ValidatePendingDocumentsUseCase,
+    AdvanceDocumentStatusUseCase,
+    ListImportErrorsUseCase,
     ProcessPhysicalDocumentUseCase,
     CreateDocumentUseCase,
+    UpdateDocumentUseCase,
     FindDocumentsUseCase,
     FindDocumentByIdUseCase,
     GetDocumentPreviewUseCase,

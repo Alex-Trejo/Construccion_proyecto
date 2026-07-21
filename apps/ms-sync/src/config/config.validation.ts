@@ -43,6 +43,10 @@ export const configValidationSchema = Joi.object({
   MS_CORE_TCP_HOST: Joi.string().hostname().required(),
   MS_CORE_TCP_PORT: Joi.number().port().required(),
 
+  // ── TCP propio (ms-sync como servidor: recibe TRIGGER_SYNC del gateway) ─────
+  MS_SYNC_TCP_HOST: Joi.string().hostname().required(),
+  MS_SYNC_TCP_PORT: Joi.number().port().required(),
+
   // ── Polling (Intervalo de sincronización) ──────────────────────────────────
   SYNC_INTERVAL_MINUTES: Joi.number()
     .integer()

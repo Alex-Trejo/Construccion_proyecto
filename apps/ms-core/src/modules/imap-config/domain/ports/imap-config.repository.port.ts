@@ -19,6 +19,12 @@ export interface ImapConfigRepositoryPort {
   upsert(data: UpsertImapConfig): Promise<IImapConfigDto>;
   /** Configs activas con password CIFRADO (para ms-sync). */
   listActive(): Promise<IImapActiveConfig[]>;
+  /** Config IMAP del usuario (sin password) o null si no tiene. */
+  findByOwner(ownerId: string): Promise<IImapConfigDto | null>;
+  /** Elimina la config del usuario. Devuelve true si existía. */
+  deleteByOwner(ownerId: string): Promise<boolean>;
+  /** Pausa/activa el escaneo del buzón. Devuelve la config o null. */
+  setActive(ownerId: string, isActive: boolean): Promise<IImapConfigDto | null>;
 }
 
 export const IMAP_CONFIG_REPOSITORY_PORT = Symbol('IMAP_CONFIG_REPOSITORY_PORT');

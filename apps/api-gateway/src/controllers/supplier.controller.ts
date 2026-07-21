@@ -60,7 +60,7 @@ export class SupplierController {
 
   /** POST /suppliers — crea un proveedor vía Factory Method en ms-core. */
   @Post()
-  @Roles('Administrador', 'Contador')
+  @Roles('Administrador', 'Asistente')
   async create(
     @Body() dto: ICreateSupplierDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -117,7 +117,7 @@ export class SupplierController {
 
   /** PUT /suppliers/:id — actualiza un proveedor del usuario. */
   @Put(':id')
-  @Roles('Administrador', 'Contador')
+  @Roles('Administrador', 'Asistente')
   async update(
     @Param('id') id: string,
     @Body() changes: IUpdateSupplierDto,
@@ -136,7 +136,7 @@ export class SupplierController {
 
   /** DELETE /suppliers/:id — desactiva (soft delete) un proveedor del usuario. */
   @Delete(':id')
-  @Roles('Administrador', 'Contador')
+  @Roles('Administrador', 'Asistente')
   async remove(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,

@@ -4,8 +4,12 @@
 # Contexto de build: raíz del repo.
 #
 # Nota: el build de Next ejecuta el Fail-Fast (serverEnv) al recolectar páginas,
-# por eso se definen placeholders de build. Los valores REALES se inyectan en
-# runtime como variables de entorno del contenedor.
+# por eso se definen placeholders de build para las vars de SERVIDOR (runtime).
+#
+# NEXT_PUBLIC_API_GATEWAY_URL se deja SIN definir a propósito: el frontend usa
+# entonces la ruta RELATIVA `/api/v1` (ver api-client.ts), que en producción
+# sirve Caddy en el mismo dominio. En dev NO se usa esta imagen (se corre
+# `pnpm dev` con `.env.local`).
 ###############################################################################
 
 FROM node:22-alpine AS builder
@@ -14,13 +18,12 @@ WORKDIR /repo
 COPY . .
 RUN pnpm install --frozen-lockfile
 
-# Placeholders SOLO para que el build pase el Fail-Fast. NO son secretos reales.
+# Placeholders SOLO para que el build pase el Fail-Fast (vars de servidor).
 ENV NEXTAUTH_URL="http://localhost:3005" \
     NEXTAUTH_SECRET="build-time-placeholder" \
     KEYCLOAK_CLIENT_ID="sgc-frontend" \
     KEYCLOAK_CLIENT_SECRET="build-time-placeholder" \
-    KEYCLOAK_ISSUER="http://localhost:8080/realms/sgc-realm" \
-    NEXT_PUBLIC_API_GATEWAY_URL="http://localhost:3000/api/v1"
+    KEYCLOAK_ISSUER="http://localhost:8080/realms/sgc-realm"
 RUN pnpm exec turbo run build --filter=frontend
 
 FROM node:22-alpine AS runner

@@ -15,16 +15,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useApi } from '@/lib/api-client';
 import { Button } from '@/components/ui/Button';
 import { useTranslation } from '@/lib/i18n/language-provider';
-import type {
-  DownloadUrlResult,
-  PaginatedEmails,
-  ReceivedEmail,
-} from '@/lib/types';
+import type { PaginatedEmails, ReceivedEmail } from '@/lib/types';
 
 const PAGE_SIZE = 10;
 
 export default function CommunicationsPage() {
-  const { apiGet } = useApi();
+  const { apiGet, apiDownload } = useApi();
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<PaginatedEmails | null>(null);
@@ -60,14 +56,18 @@ export default function CommunicationsPage() {
     void load(page);
   }, [load, page]);
 
-  const handleDownload = async (emailId: string, attachmentId: string) => {
+  const handleDownload = async (
+    emailId: string,
+    attachmentId: string,
+    filename: string,
+  ) => {
     setDownloading(attachmentId);
     try {
-      const res = await apiGet<DownloadUrlResult>(
-        `/communications/${emailId}/attachments/${attachmentId}/download`,
+      // Descarga por el PROXY autenticado del gateway (MinIO nunca se expone).
+      await apiDownload(
+        `/communications/${emailId}/attachments/${attachmentId}/file`,
+        filename,
       );
-      // Descarga directa desde MinIO con la Pre-Signed URL.
-      window.open(res.url, '_blank', 'noopener,noreferrer');
     } catch {
       setError(t('communications.downloadError'));
     } finally {
@@ -173,7 +173,7 @@ function EmailRow({
 }: Readonly<{
   email: ReceivedEmail;
   downloading: string | null;
-  onDownload: (emailId: string, attachmentId: string) => void;
+  onDownload: (emailId: string, attachmentId: string, filename: string) => void;
   downloadTitle: (filename: string) => string;
 }>) {
   return (
@@ -191,7 +191,7 @@ function EmailRow({
             {email.attachments.map((att) => (
               <button
                 key={att.id}
-                onClick={() => onDownload(email.id, att.id)}
+                onClick={() => onDownload(email.id, att.id, att.filename)}
                 disabled={downloading === att.id}
                 className="brutal-badge bg-primary transition hover:translate-y-0.5 disabled:opacity-50"
                 title={downloadTitle(att.filename)}

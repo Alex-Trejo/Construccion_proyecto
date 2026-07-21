@@ -55,4 +55,36 @@ export class TypeOrmImapConfigRepository implements ImapConfigRepositoryPort {
       passwordEncrypted: r.passwordEncrypted,
     }));
   }
+
+  async findByOwner(ownerId: string): Promise<IImapConfigDto | null> {
+    const row = await this.repo.findOne({ where: { ownerId } });
+    return row ? this.toDto(row) : null;
+  }
+
+  async deleteByOwner(ownerId: string): Promise<boolean> {
+    const result = await this.repo.delete({ ownerId });
+    return (result.affected ?? 0) > 0;
+  }
+
+  async setActive(
+    ownerId: string,
+    isActive: boolean,
+  ): Promise<IImapConfigDto | null> {
+    const row = await this.repo.findOne({ where: { ownerId } });
+    if (!row) return null;
+    row.isActive = isActive;
+    const saved = await this.repo.save(row);
+    return this.toDto(saved);
+  }
+
+  private toDto(r: ImapConfigOrmEntity): IImapConfigDto {
+    return {
+      id: r.id,
+      host: r.host,
+      port: r.port,
+      email: r.email,
+      tls: r.tls,
+      isActive: r.isActive,
+    };
+  }
 }

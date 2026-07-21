@@ -47,6 +47,12 @@ export const configValidationSchema = Joi.object({
   // ── ms-sync TCP ────────────────────────────────────────────────────────────
   MS_SYNC_TCP_HOST: Joi.string().hostname().required(),
   MS_SYNC_TCP_PORT: Joi.number().port().required(),
+
+  // ── CORS (opcional) ─────────────────────────────────────────────────────────
+  // Lista de orígenes permitidos separados por coma. En PRODUCCIÓN debe fijarse
+  // al dominio real (p. ej. https://app.tudominio.com). Si se omite, se permite
+  // cualquier origen (solo apto para desarrollo local).
+  CORS_ORIGIN: Joi.string().optional(),
 });
 
 export const configValidationOptions = {

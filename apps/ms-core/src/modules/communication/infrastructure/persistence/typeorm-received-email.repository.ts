@@ -9,7 +9,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository, type FindOptionsWhere } from 'typeorm';
+import { Repository, type FindOptionsWhere } from 'typeorm';
 
 import {
   type ReceivedEmailRepositoryPort,
@@ -37,17 +37,14 @@ export class TypeOrmReceivedEmailRepository implements ReceivedEmailRepositoryPo
     return this.toDomain(saved);
   }
 
-  /** Predicado de dueño (maneja null = sistema). */
-  private owner(ownerId: string | null): string | ReturnType<typeof IsNull> {
-    return ownerId === null ? IsNull() : ownerId;
-  }
+  // Correos COMPARTIDOS a nivel empresa (single-tenant): las lecturas no filtran
+  // por dueño y el dedup por Message-ID es global. `owner_id` = auditoría (save).
 
   async findPaginated(params: PaginationParams): Promise<PaginatedEmails> {
-    const { page, limit, ownerId } = params;
+    const { page, limit } = params;
     const skip = (page - 1) * limit;
 
     const [schemas, total] = await this.emailRepository.findAndCount({
-      where: { ownerId: this.owner(ownerId) } as FindOptionsWhere<ReceivedEmailOrmEntity>,
       order: { emailDate: 'DESC' },
       skip,
       take: limit,
@@ -63,9 +60,9 @@ export class TypeOrmReceivedEmailRepository implements ReceivedEmailRepositoryPo
     };
   }
 
-  async findById(id: string, ownerId: string | null): Promise<ReceivedEmail | null> {
+  async findById(id: string, _ownerId: string | null): Promise<ReceivedEmail | null> {
     const schema = await this.emailRepository.findOne({
-      where: { id, ownerId: this.owner(ownerId) } as FindOptionsWhere<ReceivedEmailOrmEntity>,
+      where: { id } as FindOptionsWhere<ReceivedEmailOrmEntity>,
       relations: ['attachments'],
     });
 
@@ -73,17 +70,26 @@ export class TypeOrmReceivedEmailRepository implements ReceivedEmailRepositoryPo
     return this.toDomain(schema);
   }
 
+  /** Dedup GLOBAL por Message-ID (un correo = un registro para la empresa). */
   async existsByMessageId(
     messageId: string,
-    ownerId: string | null,
+    _ownerId: string | null,
   ): Promise<boolean> {
     const count = await this.emailRepository.count({
-      where: {
-        emailMessageId: messageId,
-        ownerId: this.owner(ownerId),
-      } as FindOptionsWhere<ReceivedEmailOrmEntity>,
+      where: { emailMessageId: messageId } as FindOptionsWhere<ReceivedEmailOrmEntity>,
     });
     return count > 0;
+  }
+
+  async findByMessageId(
+    messageId: string,
+    _ownerId: string | null,
+  ): Promise<ReceivedEmail | null> {
+    const schema = await this.emailRepository.findOne({
+      where: { emailMessageId: messageId } as FindOptionsWhere<ReceivedEmailOrmEntity>,
+      relations: ['attachments'],
+    });
+    return schema ? this.toDomain(schema) : null;
   }
 
   // ── Mappers: Domain ↔ Schema ─────────────────────────────────────────────

@@ -32,6 +32,9 @@ export interface ParsedSriDocument {
   /** RUC del emisor. */
   readonly issuerTaxId: string;
 
+  /** Número del comprobante (estab-ptoEmi-secuencial), p. ej. 001-002-000384367. */
+  readonly serialNumber: string;
+
   /** Razón social del emisor. */
   readonly issuerName: string;
 

@@ -17,8 +17,10 @@ import {
   type ISupplier,
 } from '@sgc/shared';
 import { useApi } from '@/lib/api-client';
+import { useRoles } from '@/lib/roles';
 import { Button } from '@/components/ui/Button';
 import { useTranslation } from '@/lib/i18n/language-provider';
+import { EditSupplierModal } from '@/components/suppliers/EditSupplierModal';
 
 /** Función traductora provista por el provider i18n. */
 type Translate = (key: string, vars?: Record<string, string | number>) => string;
@@ -67,6 +69,11 @@ const EMPTY_FORM: FormState = {
 /** Elimina cualquier carácter no numérico (usado en RUC/Cédula y Teléfono). */
 function onlyDigits(value: string): string {
   return value.replace(/\D/g, '');
+}
+
+/** Elimina dígitos (nombres/apellidos no pueden contener números). */
+function noDigits(value: string): string {
+  return value.replace(/\d/g, '');
 }
 
 /**
@@ -136,17 +143,41 @@ function displayName(s: ISupplier): string {
 }
 
 export default function SuppliersPage() {
-  const { apiGet, apiPost } = useApi();
+  const { apiGet, apiPost, apiDelete } = useApi();
+  const { canOperate } = useRoles();
+  const canWrite = canOperate;
   const { t } = useTranslation();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [suppliers, setSuppliers] = useState<ReadonlyArray<ISupplier>>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editing, setEditing] = useState<ISupplier | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(
     null,
   );
 
   const isNatural = form.supplierType === SupplierType.PERSONA_NATURAL;
+
+  const handleDelete = async (supplier: ISupplier) => {
+    if (!window.confirm(t('suppliers.confirmDelete', { name: displayName(supplier) }))) {
+      return;
+    }
+    setDeleting(supplier.id);
+    try {
+      await apiDelete(`/suppliers/${supplier.id}`);
+      setMessage({ ok: true, text: t('suppliers.deleted') });
+      await loadSuppliers();
+    } catch (err) {
+      const text =
+        typeof err === 'object' && err !== null && 'message' in err
+          ? String((err as { message: unknown }).message)
+          : t('suppliers.unexpectedError');
+      setMessage({ ok: false, text: `❌ ${text}` });
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const loadSuppliers = useCallback(async () => {
     setLoading(true);
@@ -209,7 +240,8 @@ export default function SuppliersPage() {
       </header>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* ── Form ───────────────────────────────────────────────────────── */}
+        {/* ── Form (solo Administrador/Contador) ─────────────────────────── */}
+        {canWrite && (
         <form onSubmit={handleSubmit} className="brutal-card bg-white p-8">
           <div className="flex flex-col gap-4">
             <Field label={t('suppliers.supplierType')}>
@@ -263,7 +295,7 @@ export default function SuppliersPage() {
                   <input
                     className="brutal-input"
                     value={form.firstName}
-                    onChange={(e) => update('firstName', e.target.value)}
+                    onChange={(e) => update('firstName', noDigits(e.target.value))}
                     required
                   />
                 </Field>
@@ -271,7 +303,7 @@ export default function SuppliersPage() {
                   <input
                     className="brutal-input"
                     value={form.lastName}
-                    onChange={(e) => update('lastName', e.target.value)}
+                    onChange={(e) => update('lastName', noDigits(e.target.value))}
                     required
                   />
                 </Field>
@@ -360,6 +392,7 @@ export default function SuppliersPage() {
             )}
           </div>
         </form>
+        )}
 
         {/* ── List ───────────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-4">
@@ -388,12 +421,38 @@ export default function SuppliersPage() {
                   <p className="text-sm font-mono text-dark/80">
                     {s.supplierCode}
                   </p>
+                  {canWrite && (
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => setEditing(s)}
+                        className="brutal-badge bg-secondary"
+                      >
+                        {t('suppliers.edit')}
+                      </button>
+                      <button
+                        onClick={() => void handleDelete(s)}
+                        disabled={deleting === s.id}
+                        className="brutal-badge bg-[var(--color-danger)] text-white disabled:opacity-50"
+                      >
+                        {deleting === s.id ? t('common.deleting') : t('suppliers.delete')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      <EditSupplierModal
+        supplier={editing}
+        onClose={() => setEditing(null)}
+        onSaved={() => {
+          setMessage({ ok: true, text: t('suppliers.updated') });
+          void loadSuppliers();
+        }}
+      />
     </div>
   );
 }

@@ -34,6 +34,17 @@ export interface ReceivedEmailRepositoryPort {
 
   /** Dedup por Message-ID dentro del buzón del dueño. */
   existsByMessageId(messageId: string, ownerId: string | null): Promise<boolean>;
+
+  /**
+   * Busca un correo por su Message-ID (con adjuntos). Sirve para deduplicar a
+   * nivel de ADJUNTO: un mismo correo llega como varios eventos (uno por
+   * adjunto) y no se debe descartar el segundo adjunto (p. ej. el XML) solo
+   * porque el correo ya se creó con el primero (p. ej. el PDF).
+   */
+  findByMessageId(
+    messageId: string,
+    ownerId: string | null,
+  ): Promise<ReceivedEmail | null>;
 }
 
 export const RECEIVED_EMAIL_REPOSITORY_PORT = Symbol(

@@ -40,6 +40,14 @@ export class DocumentOrmEntity {
   @Column({ name: 'estado', type: 'varchar', length: 30, default: 'PENDIENTE' })
   estado!: string;
 
+  // Observaciones de la validación (motivo si quedó INCONSISTENTE).
+  @Column({ name: 'observaciones', type: 'text', nullable: true })
+  observaciones!: string | null;
+
+  // XML limpio del comprobante (descargado del SRI y saneado).
+  @Column({ name: 'xml_content', type: 'text', nullable: true })
+  xmlContent!: string | null;
+
   @Column({ name: 'source', type: 'varchar', length: 30 })
   source!: string;
 
@@ -77,12 +85,14 @@ export class DocumentOrmEntity {
   @OneToMany(() => DocumentItemOrmEntity, (i) => i.document, {
     cascade: true,
     eager: true,
+    orphanedRowAction: 'delete', // al reemplazar el array, borra los ítems viejos
   })
   items!: DocumentItemOrmEntity[];
 
   @OneToMany(() => DocumentTaxOrmEntity, (t) => t.document, {
     cascade: true,
     eager: true,
+    orphanedRowAction: 'delete',
   })
   taxes!: DocumentTaxOrmEntity[];
 

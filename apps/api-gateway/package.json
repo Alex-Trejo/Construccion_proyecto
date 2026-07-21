@@ -20,6 +20,7 @@
     "@nestjs/passport": "^10.0.0",
     "@nestjs/platform-express": "^10.3.0",
     "@nestjs/swagger": "^7.4.0",
+    "@nestjs/throttler": "^6.5.0",
     "@sgc/shared": "workspace:*",
     "@willsoto/nestjs-prometheus": "^6.0.2",
     "class-transformer": "^0.5.1",

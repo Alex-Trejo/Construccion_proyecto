@@ -10,9 +10,10 @@
  */
 
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MICROSERVICE_TOKENS } from '@sgc/shared';
 
@@ -73,6 +74,10 @@ import { KeycloakAdminService } from './keycloak/keycloak-admin.service';
     // ── Autenticación (JWT/Keycloak) ─────────────────────────────────────
     AuthModule,
 
+    // ── Rate limiting global (anti-abuso / anti-DoS) ─────────────────────
+    // 100 peticiones por minuto y por IP (real, gracias a "trust proxy" en main).
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
+
     // ── Métricas Prometheus (expone /api/v1/metrics) ─────────────────────
     PrometheusModule.register(),
   ],
@@ -91,6 +96,11 @@ import { KeycloakAdminService } from './keycloak/keycloak-admin.service';
     {
       provide: APP_INTERCEPTOR,
       useClass: IdentitySyncInterceptor,
+    },
+    // Aplica el rate limiting a todas las rutas.
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

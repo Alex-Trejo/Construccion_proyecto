@@ -15,6 +15,9 @@
  * @module @sgc/shared
  */
 
+// ── Utils ────────────────────────────────────────────────────────────────────
+export { normalizeInvoiceNumber } from './utils/invoice-number';
+
 // ── Enums ────────────────────────────────────────────────────────────────────
 export { DocumentStatus } from './enums/document-status.enum';
 export { DocumentType } from './enums/document-type.enum';
@@ -55,13 +58,18 @@ export type {
   IDocumentItemDto,
   IDocumentTaxDto,
   IDocumentDto,
+  IUpdateDocumentDto,
   IOcrResultDto,
   IPaginatedDocuments,
+  IImportErrorDto,
+  ImportErrorKind,
 } from './dtos/document.dto';
 
 export type {
   ICreateImapConfigDto,
   IImapConfigDto,
+  IImapTestResultDto,
+  ISyncTriggerResult,
   IImapActiveConfig,
 } from './dtos/imap-config.dto';
 
@@ -69,6 +77,7 @@ export type {
   IMetricByEstado,
   IMetricByMes,
   IDashboardMetrics,
+  IDashboardFilters,
 } from './dtos/report.dto';
 
 export type {

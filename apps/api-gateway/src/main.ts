@@ -33,11 +33,24 @@ async function bootstrap(): Promise<void> {
   // ── Prefijo global de API ────────────────────────────────────────────────
   app.setGlobalPrefix('api/v1');
 
+  // Confía en el reverse proxy (Caddy) para leer la IP real del cliente
+  // (X-Forwarded-For) → el rate limiting cuenta por cliente, no por el proxy.
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
   // ── CORS ─────────────────────────────────────────────────────────────────
-  app.enableCors({
-    origin: true,
-    credentials: true,
-  });
+  // En producción se restringe a los orígenes de CORS_ORIGIN (coma-separado).
+  // Si no se define (solo dev), se permite cualquier origen.
+  const corsOrigin = configService.get<string>('CORS_ORIGIN');
+  const origin = corsOrigin
+    ? corsOrigin.split(',').map((o) => o.trim()).filter(Boolean)
+    : true;
+  if (!corsOrigin && configService.get('NODE_ENV') === 'production') {
+    logger.warn(
+      '⚠️ CORS_ORIGIN no está definido en producción — se permite CUALQUIER origen. ' +
+        'Fija CORS_ORIGIN al dominio real.',
+    );
+  }
+  app.enableCors({ origin, credentials: true });
 
   // ── Validación global de DTOs (class-validator) ──────────────────────────
   app.useGlobalPipes(
@@ -52,25 +65,31 @@ async function bootstrap(): Promise<void> {
   // ── Filtro global: traduce errores de microservicio (TCP) a HTTP claros ──
   app.useGlobalFilters(new RpcHttpExceptionFilter());
 
-  // ── Swagger / OpenAPI ────────────────────────────────────────────────────
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('SGC — API Gateway')
-    .setDescription(
-      'Sistema de Gestión de Comprobantes. Pulsa "Authorize" y pega tu ' +
-        'access_token de Keycloak (Bearer) para probar las rutas protegidas.',
-    )
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addServer('/api/v1')
-    .build();
-  const swaggerDoc = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, swaggerDoc, {
-    swaggerOptions: { persistAuthorization: true },
-  });
+  // ── Swagger / OpenAPI (SOLO fuera de producción) ─────────────────────────
+  // En producción no se expone la documentación de la API (menos superficie).
+  const isProduction = configService.get('NODE_ENV') === 'production';
+  if (!isProduction) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('SGC — API Gateway')
+      .setDescription(
+        'Sistema de Gestión de Comprobantes. Pulsa "Authorize" y pega tu ' +
+          'access_token de Keycloak (Bearer) para probar las rutas protegidas.',
+      )
+      .setVersion('1.0')
+      .addBearerAuth()
+      .addServer('/api/v1')
+      .build();
+    const swaggerDoc = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('docs', app, swaggerDoc, {
+      swaggerOptions: { persistAuthorization: true },
+    });
+  }
 
   await app.listen(port);
   logger.log(`🚀 API Gateway escuchando en http://localhost:${port}/api/v1`);
-  logger.log(`📚 Swagger UI: http://localhost:${port}/docs`);
+  if (!isProduction) {
+    logger.log(`📚 Swagger UI: http://localhost:${port}/docs`);
+  }
 }
 
 bootstrap().catch((error: Error) => {

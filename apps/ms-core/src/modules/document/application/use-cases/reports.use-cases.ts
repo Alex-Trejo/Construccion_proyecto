@@ -9,14 +9,37 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import type { IDashboardMetrics, IDocumentDto } from '@sgc/shared';
+import { Repository, type SelectQueryBuilder } from 'typeorm';
+import type {
+  IDashboardFilters,
+  IDashboardMetrics,
+  IDocumentDto,
+} from '@sgc/shared';
 
 import { DocumentOrmEntity } from '../../infrastructure/persistence/document.orm-entity';
 import {
   type DocumentRepositoryPort,
   DOCUMENT_REPOSITORY_PORT,
 } from '../../domain/ports/document-repository.port';
+
+/**
+ * Aplica los filtros opcionales (fecha de emisión y tipo de documento) a un
+ * query builder de comprobantes. Los KPIs son COMPARTIDOS a nivel empresa: no
+ * se filtra por dueño (single-tenant). El `_ownerId` se mantiene por firma.
+ */
+export function applyDocumentFilters(
+  qb: SelectQueryBuilder<DocumentOrmEntity>,
+  _ownerId: string | null,
+  filters?: IDashboardFilters,
+): SelectQueryBuilder<DocumentOrmEntity> {
+  qb.where('1=1');
+  if (filters?.desde) qb.andWhere('d.fechaEmision >= :desde', { desde: filters.desde });
+  if (filters?.hasta) qb.andWhere('d.fechaEmision <= :hasta', { hasta: filters.hasta });
+  if (filters?.documentType) {
+    qb.andWhere('d.documentType = :tipo', { tipo: filters.documentType });
+  }
+  return qb;
+}
 
 @Injectable()
 export class DashboardMetricsUseCase {
@@ -25,32 +48,38 @@ export class DashboardMetricsUseCase {
     private readonly repo: Repository<DocumentOrmEntity>,
   ) {}
 
-  async execute(ownerId: string | null): Promise<IDashboardMetrics> {
-    const ownerClause = ownerId === null ? 'd.ownerId IS NULL' : 'd.ownerId = :ownerId';
-    const params = ownerId === null ? {} : { ownerId };
-
-    const totals = await this.repo
-      .createQueryBuilder('d')
+  async execute(
+    ownerId: string | null,
+    filters?: IDashboardFilters,
+  ): Promise<IDashboardMetrics> {
+    const totals = await applyDocumentFilters(
+      this.repo.createQueryBuilder('d'),
+      ownerId,
+      filters,
+    )
       .select('COUNT(*)', 'cantidad')
       .addSelect('COALESCE(SUM(d.total), 0)', 'total')
-      .where(ownerClause, params)
       .getRawOne<{ cantidad: string; total: string }>();
 
-    const porEstado = await this.repo
-      .createQueryBuilder('d')
+    const porEstado = await applyDocumentFilters(
+      this.repo.createQueryBuilder('d'),
+      ownerId,
+      filters,
+    )
       .select('d.estado', 'estado')
       .addSelect('COUNT(*)', 'cantidad')
       .addSelect('COALESCE(SUM(d.total), 0)', 'total')
-      .where(ownerClause, params)
       .groupBy('d.estado')
       .getRawMany<{ estado: string; cantidad: string; total: string }>();
 
-    const porMes = await this.repo
-      .createQueryBuilder('d')
+    const porMes = await applyDocumentFilters(
+      this.repo.createQueryBuilder('d'),
+      ownerId,
+      filters,
+    )
       .select("to_char(d.created_at, 'YYYY-MM')", 'mes')
       .addSelect('COUNT(*)', 'cantidad')
       .addSelect('COALESCE(SUM(d.total), 0)', 'total')
-      .where(ownerClause, params)
       .groupBy('mes')
       .orderBy('mes', 'ASC')
       .getRawMany<{ mes: string; cantidad: string; total: string }>();
@@ -79,9 +108,11 @@ export class ExportDocumentsUseCase {
     private readonly documentRepo: DocumentRepositoryPort,
   ) {}
 
-  /** Todas las filas del usuario (para generar el XLSX en el gateway). */
-  async execute(ownerId: string | null): Promise<IDocumentDto[]> {
-    const [data] = await this.documentRepo.findPaginated(ownerId, 1, 100_000);
-    return data;
+  /** Filas del usuario (filtradas) para generar el XLSX depurado en el gateway. */
+  async execute(
+    ownerId: string | null,
+    filters?: IDashboardFilters,
+  ): Promise<IDocumentDto[]> {
+    return this.documentRepo.findForExport(ownerId, filters);
   }
 }

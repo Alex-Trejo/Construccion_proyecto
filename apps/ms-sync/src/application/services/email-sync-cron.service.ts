@@ -25,6 +25,7 @@ import {
   IMAP_PATTERNS,
   MICROSERVICE_TOKENS,
   type IImapActiveConfig,
+  type ISyncTriggerResult,
 } from '@sgc/shared';
 
 import {
@@ -92,29 +93,36 @@ export class EmailSyncCronService implements OnModuleDestroy {
   /**
    * Ejecuta un ciclo de sincronización IMAP.
    * También invocable manualmente (vía TCP desde api-gateway).
+   *
+   * @returns Resumen del escaneo (cuentas, adjuntos, eventos emitidos).
    */
-  async runSync(): Promise<void> {
+  async runSync(): Promise<ISyncTriggerResult> {
+    const empty: ISyncTriggerResult = { accounts: 0, attachments: 0, eventsEmitted: 0 };
+
     // ── Mutex: evitar concurrencia ────────────────────────────────────────
     if (this.isSyncing) {
       this.logger.warn(
         '⏳ Ciclo anterior aún en progreso. Saltando este ciclo.',
       );
-      return;
+      return empty;
     }
 
     this.isSyncing = true;
     const startTime = Date.now();
     this.logger.log('🔄 Iniciando ciclo de sincronización IMAP (multiusuario)...');
 
+    let totalEmitted = 0;
+    let totalAttachments = 0;
+    let accounts = 0;
+
     try {
       // ── 1. Consultar a ms-core las configs IMAP activas ─────────────────
       const configs = await this.fetchActiveConfigs();
       if (configs.length === 0) {
         this.logger.debug('Sin configuraciones IMAP activas. Nada que escanear.');
-        return;
+        return empty;
       }
-
-      let totalEmitted = 0;
+      accounts = configs.length;
 
       // ── 2. Escanear el INBOX de CADA usuario por separado ───────────────
       for (const cfg of configs) {
@@ -138,6 +146,7 @@ export class EmailSyncCronService implements OnModuleDestroy {
             cfg.ownerId,
           );
           totalEmitted += result.eventsEmitted;
+          totalAttachments += result.totalAttachments;
           this.logger.log(
             `📬 ${cfg.email}: ${result.totalAttachments} adjuntos, ${result.eventsEmitted} eventos`,
           );
@@ -150,7 +159,7 @@ export class EmailSyncCronService implements OnModuleDestroy {
 
       const elapsed = Date.now() - startTime;
       this.logger.log(
-        `✅ Ciclo completado en ${elapsed}ms — ${configs.length} cuenta(s), ${totalEmitted} eventos emitidos`,
+        `✅ Ciclo completado en ${elapsed}ms — ${accounts} cuenta(s), ${totalEmitted} eventos emitidos`,
       );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -158,6 +167,8 @@ export class EmailSyncCronService implements OnModuleDestroy {
     } finally {
       this.isSyncing = false;
     }
+
+    return { accounts, attachments: totalAttachments, eventsEmitted: totalEmitted };
   }
 
   /** Pide a ms-core las configuraciones IMAP activas (password cifrado). */

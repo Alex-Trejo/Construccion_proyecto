@@ -23,3 +23,14 @@ export interface IDashboardMetrics {
   readonly porEstado: ReadonlyArray<IMetricByEstado>;
   readonly porMes: ReadonlyArray<IMetricByMes>;
 }
+
+/**
+ * Filtros opcionales para KPIs y exportación (RF07/RF08).
+ * `desde`/`hasta`: fecha de emisión en formato YYYY-MM-DD (comparación lexical).
+ * `documentType`: valor del enum DocumentType (FACTURA, NOTA_CREDITO, …).
+ */
+export interface IDashboardFilters {
+  readonly desde?: string;
+  readonly hasta?: string;
+  readonly documentType?: string;
+}

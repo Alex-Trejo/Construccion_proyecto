@@ -22,10 +22,12 @@ import {
   NotFoundException,
   ParseIntPipe,
   DefaultValuePipe,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { buildTcpMetadata } from '../auth/tcp-metadata';
@@ -142,5 +144,49 @@ export class CommunicationController {
     }
 
     return result;
+  }
+
+  /**
+   * GET /communications/:id/attachments/:attachmentId/file
+   *
+   * Transmite el adjunto al navegador SIN exponer MinIO: el gateway obtiene la
+   * URL pre-firmada (endpoint interno), la descarga por la red privada y hace
+   * de proxy. Autenticado + aislado por dueño.
+   */
+  @Get(':id/attachments/:attachmentId/file')
+  async streamAttachment(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') emailId: string,
+    @Param('attachmentId') attachmentId: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const payload: TcpPayload<{ emailId: string; attachmentId: string }> = {
+      data: { emailId, attachmentId },
+      metadata: buildTcpMetadata(user),
+    };
+    const result = await firstValueFrom(
+      this.msCoreClient
+        .send<{ url: string; filename: string; contentType: string } | null>(
+          COMMUNICATION_PATTERNS.GET_ATTACHMENT_URL,
+          payload,
+        )
+        .pipe(timeout(TCP_TIMEOUT_MS)),
+    );
+    if (!result) {
+      throw new NotFoundException('Adjunto no encontrado.');
+    }
+
+    const upstream = await fetch(result.url);
+    if (!upstream.ok || !upstream.body) {
+      throw new NotFoundException('Adjunto no disponible.');
+    }
+    const buffer = Buffer.from(await upstream.arrayBuffer());
+    res.setHeader('Content-Type', result.contentType || 'application/octet-stream');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${result.filename.replace(/"/g, '')}"`,
+    );
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.send(buffer);
   }
 }

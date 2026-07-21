@@ -4,13 +4,14 @@
  * @module ReportsController
  */
 
-import { Controller, Get, Inject, UseGuards } from '@nestjs/common';
+import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { firstValueFrom, timeout } from 'rxjs';
 import {
   DOCUMENT_PATTERNS,
   MICROSERVICE_TOKENS,
+  type IDashboardFilters,
   type IDashboardMetrics,
   type TcpPayload,
 } from '@sgc/shared';
@@ -33,9 +34,17 @@ export class ReportsController {
   @Get('metrics')
   async metrics(
     @CurrentUser() user: AuthenticatedUser,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
+    @Query('documentType') documentType?: string,
   ): Promise<IDashboardMetrics> {
-    const payload: TcpPayload<Record<string, never>> = {
-      data: {},
+    const filters: IDashboardFilters = {
+      ...(desde ? { desde } : {}),
+      ...(hasta ? { hasta } : {}),
+      ...(documentType ? { documentType } : {}),
+    };
+    const payload: TcpPayload<IDashboardFilters> = {
+      data: filters,
       metadata: buildTcpMetadata(user),
     };
     return firstValueFrom(

@@ -55,8 +55,9 @@ export class ProcessPhysicalDocumentUseCase {
     });
     this.logger.log(`Imagen subida a MinIO: ${key}`);
 
-    // Pre-Signed URL para que OpenAI pueda leer la imagen.
-    const url = await this.storage.getPresignedUrl(this.bucket, key, 300);
-    return this.ocr.extractFromImageUrl(url, key);
+    // OCR con la imagen INLINE (base64): OpenAI no descarga de MinIO (que es
+    // interno/local y no accesible desde sus servidores). El archivo ya quedó
+    // guardado en MinIO para previsualizarlo después.
+    return this.ocr.extractFromImage(file.content, file.contentType, key);
   }
 }
