@@ -87,7 +87,11 @@ describe('EmailSyncCronService', () => {
   it('should handle errors gracefully without throwing', async () => {
     imapClientMock.fetchUnseenWithAttachments.mockRejectedValue(new Error('IMAP connection failed'));
 
-    await expect(cronService.runSync()).resolves.toBeUndefined();
+    await expect(cronService.runSync()).resolves.toEqual({
+      accounts: 1,
+      attachments: 0,
+      eventsEmitted: 0,
+    });
 
     expect(imapClientMock.fetchUnseenWithAttachments).toHaveBeenCalled();
     expect(emailProcessorMock.processEmails).not.toHaveBeenCalled();

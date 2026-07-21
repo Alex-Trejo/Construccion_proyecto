@@ -41,8 +41,8 @@ describe('@sgc/shared — Message Patterns', () => {
       expect(DOCUMENT_PATTERNS.UPDATE_STATUS).toBe('CORE_DOCUMENT_UPDATE_STATUS');
     });
 
-    it('debe tener exactamente 12 patrones', () => {
-      expect(Object.keys(DOCUMENT_PATTERNS)).toHaveLength(12);
+    it('debe tener exactamente 17 patrones', () => {
+      expect(Object.keys(DOCUMENT_PATTERNS)).toHaveLength(17);
     });
   });
 
