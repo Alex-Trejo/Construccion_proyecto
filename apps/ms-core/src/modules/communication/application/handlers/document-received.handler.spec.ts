@@ -13,7 +13,7 @@ describe('DocumentReceivedHandler', () => {
       uploadFile: jest.fn(),
     };
     emailRepoMock = {
-      existsByMessageId: jest.fn(),
+      findByMessageId: jest.fn(),
       save: jest.fn(),
     };
     processSriXmlUseCaseMock = {
@@ -53,7 +53,7 @@ describe('DocumentReceivedHandler', () => {
   };
 
   it('should ignore duplicate emails', async () => {
-    emailRepoMock.existsByMessageId.mockResolvedValue(true);
+    emailRepoMock.findByMessageId.mockResolvedValue({ attachments: [{ filename: basePayload.filename }] });
 
     await handler.handleDocumentReceived(basePayload);
 
@@ -62,7 +62,7 @@ describe('DocumentReceivedHandler', () => {
   });
 
   it('should process new email, upload, save and process xml if extension is xml', async () => {
-    emailRepoMock.existsByMessageId.mockResolvedValue(false);
+    emailRepoMock.findByMessageId.mockResolvedValue(null);
     storageMock.uploadFile.mockResolvedValue({ bucket: 'b', key: 'k' });
     processSriXmlUseCaseMock.execute.mockResolvedValue({ success: true });
 
@@ -74,7 +74,7 @@ describe('DocumentReceivedHandler', () => {
   });
 
   it('should process new email, upload, save but NOT process xml if extension is pdf', async () => {
-    emailRepoMock.existsByMessageId.mockResolvedValue(false);
+    emailRepoMock.findByMessageId.mockResolvedValue(null);
     storageMock.uploadFile.mockResolvedValue({ bucket: 'b', key: 'k' });
 
     await handler.handleDocumentReceived({ ...basePayload, extension: 'pdf' });
@@ -85,7 +85,7 @@ describe('DocumentReceivedHandler', () => {
   });
 
   it('should handle xml processing failure gracefully', async () => {
-    emailRepoMock.existsByMessageId.mockResolvedValue(false);
+    emailRepoMock.findByMessageId.mockResolvedValue(null);
     storageMock.uploadFile.mockResolvedValue({ bucket: 'b', key: 'k' });
     processSriXmlUseCaseMock.execute.mockResolvedValue({ success: false, errorMessage: 'Fail' });
 
@@ -98,7 +98,7 @@ describe('DocumentReceivedHandler', () => {
   });
 
   it('should catch errors and log them without crashing', async () => {
-    emailRepoMock.existsByMessageId.mockRejectedValue(new Error('DB connection lost'));
+    emailRepoMock.findByMessageId.mockRejectedValue(new Error('DB connection lost'));
 
     await expect(handler.handleDocumentReceived(basePayload)).resolves.toBeUndefined();
   });
