@@ -17,6 +17,34 @@ Arquitectura de microservicios, Clean Architecture, TypeScript estricto y config
 
 ---
 
+## 🌟 Novedades Parcial II (PC) — Funcionalidades Implementadas
+
+Esta versión del SGC incluye todas las solicitudes y requerimientos funcionales aprobados para la fase final del proyecto:
+
+### 1. Despliegue e Infraestructura de Producción
+- **AWS EC2 + Caddy**: Despliegue en la nube utilizando Docker Compose y Caddy como Reverse Proxy para proveer enrutamiento seguro y certificados SSL/TLS automáticos (HTTPS) en dominios de producción (`aethelsoft.online`).
+- **CI/CD Automatizado**: Pipelines robustos en GitHub Actions que incluyen construcción, validaciones de Linting, ejecución de Pruebas Unitarias (Jest), análisis de seguridad (Trivy), calidad de código (SonarCloud) y Auto-Despliegue.
+
+### 2. Módulo Avanzado de Proveedores
+- **CRUD Inteligente**: Gestión de Personas Naturales y Jurídicas con validación criptográfica estricta del RUC ecuatoriano.
+- **Aislamiento de Datos (Multi-Tenant)**: Todo proveedor creado o sincronizado le pertenece únicamente al usuario logueado en la plataforma.
+
+### 3. Sincronización de Correo IMAP Multi-Usuario (`ms-sync`)
+- **Auto-Configuración**: Interfaz Frontend segura para que cada usuario configure sus credenciales de correo (Gmail, Outlook, etc.).
+- **Seguridad Criptográfica**: Las contraseñas de las aplicaciones IMAP se encriptan nativamente con **AES-256-GCM** antes de tocar la base de datos.
+- **Cronjob Resiliente**: Descarga automatizada y periódica de correos con adjuntos fiscales, resistente a fallas y bloqueos.
+
+### 4. Pipeline de Procesamiento Fiscal SRI
+- **Interceptación y Sanitización**: Limpieza de firmas electrónicas invasivas en archivos XML para evitar roturas de parseo.
+- **Validación Oficial XSD**: Comparación estricta de la estructura del XML con los esquemas oficiales del Servicio de Rentas Internas (SRI).
+- **Auto-Aprovisionamiento**: Al leer un XML de una factura válida, el sistema extrae automáticamente la información del emisor y lo registra como un Proveedor de forma desatendida.
+
+### 5. Interfaz de Usuario y Experiencia (Frontend)
+- **Diseño Neo-Brutalista**: Construido con Next.js 15 (App Router) y Tailwind v4.
+- **SSO y Seguridad**: Autenticación delegada a Keycloak, gestión de sesiones y protección de rutas en el cliente y el servidor.
+
+---
+
 ## 1. Prerrequisitos
 
 - **Node.js** ≥ 20 (probado con 22)
