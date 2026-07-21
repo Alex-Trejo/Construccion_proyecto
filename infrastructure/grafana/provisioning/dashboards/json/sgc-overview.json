@@ -18,7 +18,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "up{job=~\"api-gateway|ms-core|keycloak|loki|prometheus\"}",
+          "expr": "max by (job) (up{job=~\"api-gateway|ms-core|keycloak|loki|prometheus\"})",
           "legendFormat": "{{job}}"
         }
       ],
