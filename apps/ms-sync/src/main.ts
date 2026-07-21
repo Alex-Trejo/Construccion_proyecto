@@ -36,6 +36,7 @@ async function bootstrap(): Promise<void> {
   const config = app.get(ConfigService);
   const host = config.getOrThrow<string>('MS_SYNC_TCP_HOST');
   const port = config.getOrThrow<number>('MS_SYNC_TCP_PORT');
+  const httpPort = config.getOrThrow<number>('MS_SYNC_HTTP_PORT');
 
   // Servidor TCP: recibe TRIGGER_SYNC del gateway y corre el cron internamente.
   app.connectMicroservice<MicroserviceOptions>({
@@ -48,7 +49,12 @@ async function bootstrap(): Promise<void> {
 
   await app.startAllMicroservices();
 
+  // Servidor HTTP SOLO para /metrics (Prometheus). Interno a la red Docker:
+  // el puerto NO se publica al host, igual que el HTTP de ms-core.
+  await app.listen(httpPort);
+
   logger.log(`🔄 ms-sync (Worker IMAP) escuchando TCP en ${host}:${port}`);
+  logger.log(`📊 ms-sync /metrics (Prometheus) en puerto interno ${httpPort}`);
   logger.log('📧 Polling IMAP programado — esperando ciclo de sincronización...');
 }
 

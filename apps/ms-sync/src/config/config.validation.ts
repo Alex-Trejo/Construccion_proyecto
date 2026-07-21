@@ -47,6 +47,9 @@ export const configValidationSchema = Joi.object({
   MS_SYNC_TCP_HOST: Joi.string().hostname().required(),
   MS_SYNC_TCP_PORT: Joi.number().port().required(),
 
+  // ── HTTP interno para /metrics (Prometheus). No se publica al host. ─────────
+  MS_SYNC_HTTP_PORT: Joi.number().port().required(),
+
   // ── Polling (Intervalo de sincronización) ──────────────────────────────────
   SYNC_INTERVAL_MINUTES: Joi.number()
     .integer()
