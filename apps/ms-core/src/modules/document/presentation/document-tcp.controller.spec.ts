@@ -26,7 +26,10 @@ describe('DocumentTcpController', () => {
     findById: { execute: jest.fn() },
     getPreview: { execute: jest.fn() },
     processTxtBatch: { execute: jest.fn() },
-    importSriDocuments: { processPending: jest.fn() },
+    importSriDocuments: {
+      processPending: jest.fn(),
+      retryFailed: jest.fn(),
+    },
     validatePending: { execute: jest.fn() },
     validateDocument: { execute: jest.fn() },
     advanceStatus: { execute: jest.fn() },

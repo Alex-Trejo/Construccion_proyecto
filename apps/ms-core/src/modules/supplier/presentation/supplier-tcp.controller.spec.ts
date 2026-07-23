@@ -52,26 +52,26 @@ describe('SupplierTcpController', () => {
 
   const createNaturalSupplier = () => {
     const s = new PersonaNaturalSupplier('owner-1');
-    Object.assign(s, {
-      id: 'sup1',
-      supplierCode: new SupplierCode('SUP-123'),
-      ruc: new Ruc('1790011674001'),
-      email: 'test@test.com',
-      firstName: 'Juan',
-      lastName: 'Perez',
-      cedula: '1700000000',
+    Object.defineProperties(s, {
+      id: { get: () => 'sup1' },
+      supplierCode: { get: () => new SupplierCode('SUP-123') },
+      ruc: { get: () => new Ruc('1790011674001') },
+      email: { get: () => 'test@test.com' },
+      firstName: { get: () => 'Juan' },
+      lastName: { get: () => 'Perez' },
+      cedula: { get: () => '1700000000' }
     });
     return s;
   };
 
   const createJuridicaSupplier = () => {
     const s = new PersonaJuridicaSupplier('owner-1');
-    Object.assign(s, {
-      id: 'sup2',
-      supplierCode: new SupplierCode('SUP-124'),
-      ruc: new Ruc('1790011674001'),
-      email: 'corp@test.com',
-      businessName: 'Corp SA',
+    Object.defineProperties(s, {
+      id: { get: () => 'sup2' },
+      supplierCode: { get: () => new SupplierCode('SUP-124') },
+      ruc: { get: () => new Ruc('1790011674001') },
+      email: { get: () => 'corp@test.com' },
+      businessName: { get: () => 'Corp SA' }
     });
     return s;
   };

@@ -65,7 +65,7 @@ describe('SriSoapApiAdapter', () => {
 
     it('should retry on transient network errors and succeed', async () => {
       mockAxiosInstance.post
-        .mockRejectedValueOnce({ code: 'ENOTFOUND' })
+        .mockRejectedValueOnce(Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' }))
         .mockResolvedValueOnce({
           data: `<autorizacion><estado>AUTORIZADO</estado></autorizacion>`,
         });
@@ -83,14 +83,16 @@ describe('SriSoapApiAdapter', () => {
     });
 
     it('should fail after max retries for transient errors', async () => {
-      mockAxiosInstance.post.mockRejectedValue({ code: 'ECONNRESET' });
+      mockAxiosInstance.post.mockRejectedValue(Object.assign(new Error('ECONNRESET'), { code: 'ECONNRESET' }));
 
       jest.useFakeTimers();
       
-      const promise = adapter.fetchAuthorization(claveAcceso);
+      let caughtError: any;
+      const promise = adapter.fetchAuthorization(claveAcceso).catch(e => caughtError = e);
       await jest.runAllTimersAsync();
+      await promise;
       
-      await expect(promise).rejects.toMatchObject({ code: 'ECONNRESET' });
+      expect(caughtError).toMatchObject({ code: 'ECONNRESET' });
       expect(mockAxiosInstance.post).toHaveBeenCalledTimes(4);
       
       jest.useRealTimers();
