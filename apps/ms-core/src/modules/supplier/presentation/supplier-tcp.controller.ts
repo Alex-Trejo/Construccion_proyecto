@@ -23,11 +23,11 @@ import { Supplier } from '../domain/entities/supplier.entity';
 import { DomainValidationError } from '../domain/errors/domain-validation.error';
 import { PersonaNaturalSupplier } from '../domain/entities/persona-natural-supplier.entity';
 import { PersonaJuridicaSupplier } from '../domain/entities/persona-juridica-supplier.entity';
-import { CreateSupplierUseCase } from '../application/use-cases/create-supplier.use-case';
-import { FindAllSuppliersUseCase } from '../application/use-cases/find-all-suppliers.use-case';
-import { FindSupplierByIdUseCase } from '../application/use-cases/find-supplier-by-id.use-case';
-import { UpdateSupplierUseCase } from '../application/use-cases/update-supplier.use-case';
-import { DeleteSupplierUseCase } from '../application/use-cases/delete-supplier.use-case';
+import { CreateSupplierUseCase } from '../application/use-cases/mutations/create-supplier.use-case';
+import { FindAllSuppliersUseCase } from '../application/use-cases/queries/find-all-suppliers.use-case';
+import { FindSupplierByIdUseCase } from '../application/use-cases/queries/find-supplier-by-id.use-case';
+import { UpdateSupplierUseCase } from '../application/use-cases/mutations/update-supplier.use-case';
+import { DeleteSupplierUseCase } from '../application/use-cases/mutations/delete-supplier.use-case';
 
 @Controller()
 export class SupplierTcpController {

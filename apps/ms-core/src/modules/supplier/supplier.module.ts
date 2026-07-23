@@ -19,11 +19,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SUPPLIER_REPOSITORY_PORT } from './domain/ports/supplier-repository.port';
 import { SupplierOrmEntity } from './infrastructure/persistence/supplier.orm-entity';
 import { TypeOrmSupplierRepository } from './infrastructure/persistence/typeorm-supplier.repository';
-import { CreateSupplierUseCase } from './application/use-cases/create-supplier.use-case';
-import { FindAllSuppliersUseCase } from './application/use-cases/find-all-suppliers.use-case';
-import { FindSupplierByIdUseCase } from './application/use-cases/find-supplier-by-id.use-case';
-import { UpdateSupplierUseCase } from './application/use-cases/update-supplier.use-case';
-import { DeleteSupplierUseCase } from './application/use-cases/delete-supplier.use-case';
+import { CreateSupplierUseCase } from './application/use-cases/mutations/create-supplier.use-case';
+import { FindAllSuppliersUseCase } from './application/use-cases/queries/find-all-suppliers.use-case';
+import { FindSupplierByIdUseCase } from './application/use-cases/queries/find-supplier-by-id.use-case';
+import { UpdateSupplierUseCase } from './application/use-cases/mutations/update-supplier.use-case';
+import { DeleteSupplierUseCase } from './application/use-cases/mutations/delete-supplier.use-case';
 import { SupplierTcpController } from './presentation/supplier-tcp.controller';
 
 @Module({

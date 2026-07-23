@@ -22,14 +22,14 @@ import {
   configValidationOptions,
 } from './config/config.validation';
 import { AuthModule } from './auth/auth.module';
-import { CommunicationController } from './controllers/communication.controller';
-import { SupplierController } from './controllers/supplier.controller';
-import { HealthController } from './controllers/health.controller';
-import { UserController } from './controllers/user.controller';
-import { RoleController } from './controllers/role.controller';
-import { DocumentController } from './controllers/document.controller';
-import { ReportsController } from './controllers/reports.controller';
-import { UserImapController } from './controllers/user-imap.controller';
+import { CommunicationController } from './controllers/communication/communication.controller';
+import { SupplierController } from './controllers/supplier/supplier.controller';
+import { HealthController } from './controllers/health/health.controller';
+import { UserController } from './controllers/identity/user.controller';
+import { RoleController } from './controllers/identity/role.controller';
+import { DocumentController } from './controllers/document/document.controller';
+import { ReportsController } from './controllers/document/reports.controller';
+import { UserImapController } from './controllers/imap-config/user-imap.controller';
 import { IdentitySyncInterceptor } from './auth/identity-sync.interceptor';
 import { KeycloakAdminService } from './keycloak/keycloak-admin.service';
 
