@@ -31,7 +31,7 @@ import {
 import { ReceivedEmail } from '../../domain/entities/received-email.entity';
 import { EmailAttachmentEntity } from '../../domain/entities/email-attachment.entity';
 import type { UploadResult } from '../../domain/ports/object-storage.port';
-import { ProcessSriXmlUseCase } from '../../../document/application/use-cases/process-sri-xml.use-case';
+import { ProcessSriXmlUseCase } from '../../../document/application/use-cases/processing/process-sri-xml.use-case';
 
 /** Payload recibido de ms-sync (debe coincidir con DocumentReceivedPayload). */
 interface IncomingDocumentPayload {

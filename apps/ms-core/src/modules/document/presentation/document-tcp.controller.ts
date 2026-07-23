@@ -23,29 +23,29 @@ import {
   type TcpPayload,
 } from '@sgc/shared';
 
-import { ProcessPhysicalDocumentUseCase } from '../application/use-cases/process-physical-document.use-case';
+import { ProcessPhysicalDocumentUseCase } from '../application/use-cases/importing/process-physical-document.use-case';
 import {
   CreateDocumentUseCase,
   UpdateDocumentUseCase,
-} from '../application/use-cases/create-document.use-case';
+} from '../application/use-cases/mutations/create-document.use-case';
 import {
   FindDocumentsUseCase,
   FindDocumentByIdUseCase,
   GetDocumentPreviewUseCase,
-} from '../application/use-cases/find-documents.use-case';
-import { ProcessTxtBatchUseCase } from '../application/use-cases/process-txt-batch.use-case';
-import { ImportSriDocumentsUseCase } from '../application/use-cases/import-sri-documents.use-case';
+} from '../application/use-cases/queries/find-documents.use-case';
+import { ProcessTxtBatchUseCase } from '../application/use-cases/importing/process-txt-batch.use-case';
+import { ImportSriDocumentsUseCase } from '../application/use-cases/importing/import-sri-documents.use-case';
 import {
   ValidatePendingDocumentsUseCase,
   AdvanceDocumentStatusUseCase,
   ValidateDocumentUseCase,
   type ValidatePendingResult,
-} from '../application/use-cases/validate-document.use-case';
-import { ListImportErrorsUseCase } from '../application/use-cases/list-import-errors.use-case';
+} from '../application/use-cases/validations/validate-document.use-case';
+import { ListImportErrorsUseCase } from '../application/use-cases/queries/list-import-errors.use-case';
 import {
   DashboardMetricsUseCase,
   ExportDocumentsUseCase,
-} from '../application/use-cases/reports.use-cases';
+} from '../application/use-cases/queries/reports.use-cases';
 
 interface PhysicalPayload {
   readonly contentBase64: string;
