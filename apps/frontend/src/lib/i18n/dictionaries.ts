@@ -299,7 +299,7 @@ const es: Dict = {
   'imap.host': 'Servidor IMAP',
   'imap.port': 'Puerto',
   'imap.email': 'Correo electrónico',
-  'imap.password': 'Contraseña de aplicación',
+  'imap.password': 'Contraseña de aplicación', // NOSONAR
   'imap.passwordHelp':
     'Por políticas de seguridad (Google/Microsoft), no utilice su contraseña principal. Debe generar y pegar una "Contraseña de Aplicación" (App Password) de 16 caracteres.',
   'imap.tls': 'Usar TLS',
@@ -357,7 +357,7 @@ const es: Dict = {
   'users.form.email': 'Correo electrónico',
   'users.form.firstName': 'Nombres',
   'users.form.lastName': 'Apellidos',
-  'users.form.password': 'Contraseña',
+  'users.form.password': 'Contraseña', // NOSONAR
   'users.form.passwordHint': 'Mínimo 8 caracteres; distinta del usuario y del correo.',
   'users.form.role': 'Rol inicial',
   'users.create': 'Crear usuario',
@@ -681,7 +681,7 @@ const en: Dict = {
   'imap.host': 'IMAP server',
   'imap.port': 'Port',
   'imap.email': 'Email address',
-  'imap.password': 'App password',
+  'imap.password': 'App password', // NOSONAR
   'imap.passwordHelp':
     'For security reasons (Google/Microsoft), do not use your main password. You must generate and paste a 16-character "App Password".',
   'imap.tls': 'Use TLS',
@@ -739,7 +739,7 @@ const en: Dict = {
   'users.form.email': 'Email',
   'users.form.firstName': 'First name',
   'users.form.lastName': 'Last name',
-  'users.form.password': 'Password',
+  'users.form.password': 'Password', // NOSONAR
   'users.form.passwordHint': 'At least 8 characters; different from username and email.',
   'users.form.role': 'Initial role',
   'users.create': 'Create user',
