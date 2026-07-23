@@ -155,6 +155,13 @@ describe('KeycloakAdminService', () => {
       ok: true,
       text: async () => JSON.stringify([{ name: 'Admin' }]),
     });
+    
+    // MISSING call from createUser -> getUserRealmRoles
+    mockToken(); // GET roles (createUser final)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => JSON.stringify([{ name: 'Admin' }]),
+    });
 
     const user = await service.createUser({
       username: 'test1',
