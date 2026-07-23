@@ -35,11 +35,15 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 sm:items-center"
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onClose();
+      }}
       role="presentation"
     >
       <div
         className="brutal-card-sm my-8 w-full max-w-lg bg-white p-6"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label={title}
