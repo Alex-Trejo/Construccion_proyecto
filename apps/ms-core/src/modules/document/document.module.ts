@@ -43,33 +43,33 @@ import { DOCUMENT_REPOSITORY_PORT } from './domain/ports/document-repository.por
 import { OBJECT_STORAGE_PORT } from '../communication/domain/ports/object-storage.port';
 import { MinioAdapter } from '../communication/infrastructure/adapters/minio.adapter';
 
-import { FetchAndSanitizeXmlUseCase } from './application/use-cases/fetch-and-sanitize-xml.use-case';
-import { ProcessSriXmlUseCase } from './application/use-cases/process-sri-xml.use-case';
-import { AutoProvisionEntitiesUseCase } from './application/use-cases/auto-provision-entities.use-case';
-import { ProcessTxtBatchUseCase } from './application/use-cases/process-txt-batch.use-case';
-import { ImportSriDocumentsUseCase } from './application/use-cases/import-sri-documents.use-case';
-import { PersistParsedDocumentUseCase } from './application/use-cases/persist-parsed-document.use-case';
+import { FetchAndSanitizeXmlUseCase } from './application/use-cases/processing/fetch-and-sanitize-xml.use-case';
+import { ProcessSriXmlUseCase } from './application/use-cases/processing/process-sri-xml.use-case';
+import { AutoProvisionEntitiesUseCase } from './application/use-cases/processing/auto-provision-entities.use-case';
+import { ProcessTxtBatchUseCase } from './application/use-cases/importing/process-txt-batch.use-case';
+import { ImportSriDocumentsUseCase } from './application/use-cases/importing/import-sri-documents.use-case';
+import { PersistParsedDocumentUseCase } from './application/use-cases/processing/persist-parsed-document.use-case';
 import {
   ValidateDocumentUseCase,
   ValidatePendingDocumentsUseCase,
   AdvanceDocumentStatusUseCase,
-} from './application/use-cases/validate-document.use-case';
-import { ListImportErrorsUseCase } from './application/use-cases/list-import-errors.use-case';
+} from './application/use-cases/validations/validate-document.use-case';
+import { ListImportErrorsUseCase } from './application/use-cases/queries/list-import-errors.use-case';
 import { DocumentValidationService } from './domain/services/document-validation.service';
-import { ProcessPhysicalDocumentUseCase } from './application/use-cases/process-physical-document.use-case';
+import { ProcessPhysicalDocumentUseCase } from './application/use-cases/importing/process-physical-document.use-case';
 import {
   CreateDocumentUseCase,
   UpdateDocumentUseCase,
-} from './application/use-cases/create-document.use-case';
+} from './application/use-cases/mutations/create-document.use-case';
 import {
   FindDocumentsUseCase,
   FindDocumentByIdUseCase,
   GetDocumentPreviewUseCase,
-} from './application/use-cases/find-documents.use-case';
+} from './application/use-cases/queries/find-documents.use-case';
 import {
   DashboardMetricsUseCase,
   ExportDocumentsUseCase,
-} from './application/use-cases/reports.use-cases';
+} from './application/use-cases/queries/reports.use-cases';
 import { DocumentTcpController } from './presentation/document-tcp.controller';
 
 import { SupplierModule } from '../supplier/supplier.module';
