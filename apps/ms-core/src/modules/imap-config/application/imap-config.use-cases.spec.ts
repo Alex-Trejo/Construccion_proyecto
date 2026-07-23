@@ -1,3 +1,4 @@
+import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import {
   SaveImapConfigUseCase,
@@ -7,84 +8,163 @@ import {
   SetImapActiveUseCase,
   TestImapConnectionUseCase,
 } from './imap-config.use-cases';
-import { type ImapConfigRepositoryPort } from '../domain/ports/imap-config.repository.port';
+import { IMAP_CONFIG_REPOSITORY_PORT } from '../domain/ports/imap-config.repository.port';
+import * as cryptoUtil from '../../../common/crypto.util';
+import { ImapFlow } from 'imapflow';
 
-jest.mock('imapflow', () => ({
-  ImapFlow: jest.fn().mockImplementation(() => ({
-    connect: jest.fn().mockResolvedValue(true),
-    logout: jest.fn().mockResolvedValue(true),
-  })),
-}));
+jest.mock('imapflow');
+jest.mock('../../../common/crypto.util');
 
-jest.mock('../../../common/crypto.util', () => ({
-  encryptSecret: jest.fn().mockReturnValue('encrypted-password'),
-}));
+describe('ImapConfigUseCases', () => {
+  const mockRepo = {
+    upsert: jest.fn(),
+    listActive: jest.fn(),
+    findByOwner: jest.fn(),
+    deleteByOwner: jest.fn(),
+    setActive: jest.fn(),
+  };
 
-describe('Imap Config Use Cases', () => {
-  let repoMock: jest.Mocked<ImapConfigRepositoryPort>;
-  let configMock: jest.Mocked<ConfigService>;
-  const mockOwnerId = 'owner-123';
+  const mockConfigService = {
+    getOrThrow: jest.fn().mockReturnValue('test-key-32-chars-long-12345678'),
+  };
 
   beforeEach(() => {
-    repoMock = {
-      upsert: jest.fn(),
-      findByOwner: jest.fn(),
-      listActive: jest.fn(),
-      deleteByOwner: jest.fn(),
-      setActive: jest.fn(),
-    } as unknown as jest.Mocked<ImapConfigRepositoryPort>;
-
-    configMock = {
-      getOrThrow: jest.fn().mockReturnValue('test-key-123'),
-      get: jest.fn(),
-    } as unknown as jest.Mocked<ConfigService>;
+    jest.clearAllMocks();
   });
 
   describe('SaveImapConfigUseCase', () => {
-    it('debe cifrar el password y guardarlo', async () => {
-      const useCase = new SaveImapConfigUseCase(repoMock, configMock);
-      const dto = { host: 'imap.test', port: 993, email: 'test@test.com', password: '123' };
-      repoMock.upsert.mockResolvedValue({ id: '1' } as any);
+    let useCase: SaveImapConfigUseCase;
 
-      await useCase.execute(dto, mockOwnerId);
+    beforeEach(async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          SaveImapConfigUseCase,
+          { provide: IMAP_CONFIG_REPOSITORY_PORT, useValue: mockRepo },
+          { provide: ConfigService, useValue: mockConfigService },
+        ],
+      }).compile();
+      useCase = module.get(SaveImapConfigUseCase);
+    });
 
-      expect(repoMock.upsert).toHaveBeenCalledWith({
-        ownerId: mockOwnerId,
-        host: dto.host,
-        port: dto.port,
-        email: dto.email,
-        passwordEncrypted: 'encrypted-password',
+    it('should encrypt password and upsert config', async () => {
+      (cryptoUtil.encryptSecret as jest.Mock).mockReturnValue('encrypted-pass');
+      mockRepo.upsert.mockResolvedValue({ id: 'config-1' });
+
+      const result = await useCase.execute(
+        { email: 'a@a', password: 'pwd', host: 'host', port: 993 },
+        'owner-1'
+      );
+
+      expect(result.id).toBe('config-1');
+      expect(cryptoUtil.encryptSecret).toHaveBeenCalledWith('pwd', 'test-key-32-chars-long-12345678');
+      expect(mockRepo.upsert).toHaveBeenCalledWith({
+        ownerId: 'owner-1',
+        host: 'host',
+        port: 993,
+        email: 'a@a',
+        passwordEncrypted: 'encrypted-pass',
         tls: true,
       });
     });
   });
 
-  describe('GetImapConfigUseCase', () => {
-    it('debe retornar la config', async () => {
-      const useCase = new GetImapConfigUseCase(repoMock);
-      repoMock.findByOwner.mockResolvedValue({ id: '1' } as any);
-      
-      const result = await useCase.execute(mockOwnerId);
-      
-      expect(repoMock.findByOwner).toHaveBeenCalledWith(mockOwnerId);
-      expect(result).not.toBeNull();
+  describe('Simple Repository Delegates', () => {
+    it('ListActiveImapConfigsUseCase', async () => {
+      const module = await Test.createTestingModule({
+        providers: [ListActiveImapConfigsUseCase, { provide: IMAP_CONFIG_REPOSITORY_PORT, useValue: mockRepo }]
+      }).compile();
+      const uc = module.get(ListActiveImapConfigsUseCase);
+      mockRepo.listActive.mockResolvedValue([]);
+      expect(await uc.execute()).toEqual([]);
+    });
+
+    it('GetImapConfigUseCase', async () => {
+      const module = await Test.createTestingModule({
+        providers: [GetImapConfigUseCase, { provide: IMAP_CONFIG_REPOSITORY_PORT, useValue: mockRepo }]
+      }).compile();
+      const uc = module.get(GetImapConfigUseCase);
+      mockRepo.findByOwner.mockResolvedValue({ id: '1' });
+      expect(await uc.execute('owner1')).toEqual({ id: '1' });
+    });
+
+    it('DeleteImapConfigUseCase', async () => {
+      const module = await Test.createTestingModule({
+        providers: [DeleteImapConfigUseCase, { provide: IMAP_CONFIG_REPOSITORY_PORT, useValue: mockRepo }]
+      }).compile();
+      const uc = module.get(DeleteImapConfigUseCase);
+      mockRepo.deleteByOwner.mockResolvedValue(true);
+      expect(await uc.execute('owner1')).toBe(true);
+    });
+
+    it('SetImapActiveUseCase', async () => {
+      const module = await Test.createTestingModule({
+        providers: [SetImapActiveUseCase, { provide: IMAP_CONFIG_REPOSITORY_PORT, useValue: mockRepo }]
+      }).compile();
+      const uc = module.get(SetImapActiveUseCase);
+      mockRepo.setActive.mockResolvedValue({ id: '1', isActive: true });
+      expect(await uc.execute('owner1', true)).toEqual({ id: '1', isActive: true });
     });
   });
 
   describe('TestImapConnectionUseCase', () => {
-    it('debe conectar exitosamente', async () => {
-      const useCase = new TestImapConnectionUseCase();
-      const result = await useCase.execute({
-        host: 'imap.test',
-        port: 993,
-        email: 'test',
-        password: '123'
-      });
-      
-      expect(result.ok).toBe(true);
+    let useCase: TestImapConnectionUseCase;
+    let mockClient: any;
+
+    beforeEach(async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [TestImapConnectionUseCase],
+      }).compile();
+      useCase = module.get(TestImapConnectionUseCase);
+
+      mockClient = {
+        connect: jest.fn(),
+        logout: jest.fn(),
+      };
+      (ImapFlow as jest.Mock).mockImplementation(() => mockClient);
     });
-    
-    // Aquí podríamos mockear fallos de imapflow re-requiriendo o sobreescribiendo el prototipo, 
-    // pero omitiremos por brevedad ya que ImapFlow está mockeado globalmente.
+
+    it('should return ok=true if connection succeeds', async () => {
+      mockClient.connect.mockResolvedValue(undefined);
+      mockClient.logout.mockResolvedValue(undefined);
+
+      const res = await useCase.execute({ email: 'a@a', password: 'pwd', host: 'host', port: 993 });
+      
+      expect(res.ok).toBe(true);
+      expect(res.message).toContain('Conexión exitosa');
+    });
+
+    it('should catch and classify AUTHENTICATIONFAILED', async () => {
+      mockClient.connect.mockRejectedValue(new Error('AUTHENTICATIONFAILED'));
+      mockClient.logout.mockRejectedValue(new Error('Logout fail')); // should ignore inner error
+      
+      const res = await useCase.execute({ email: 'a@a', password: 'pwd', host: 'host', port: 993 });
+      
+      expect(res.ok).toBe(false);
+      expect(res.message).toContain('Autenticación rechazada');
+    });
+
+    it('should catch and classify ENOTFOUND', async () => {
+      mockClient.connect.mockRejectedValue({ code: 'ENOTFOUND' });
+      const res = await useCase.execute({ email: 'a@a', password: 'pwd', host: 'host', port: 993 });
+      expect(res.message).toContain('No se encontró el servidor');
+    });
+
+    it('should catch and classify ECONNREFUSED', async () => {
+      mockClient.connect.mockRejectedValue({ code: 'ECONNREFUSED' });
+      const res = await useCase.execute({ email: 'a@a', password: 'pwd', host: 'host', port: 993 });
+      expect(res.message).toContain('Conexión rechazada');
+    });
+
+    it('should catch and classify ETIMEDOUT', async () => {
+      mockClient.connect.mockRejectedValue(new Error('Connection timeout'));
+      const res = await useCase.execute({ email: 'a@a', password: 'pwd', host: 'host', port: 993 });
+      expect(res.message).toContain('Tiempo de espera agotado');
+    });
+
+    it('should catch generic errors', async () => {
+      mockClient.connect.mockRejectedValue(new Error('Unknown protocol error'));
+      const res = await useCase.execute({ email: 'a@a', password: 'pwd', host: 'host', port: 993 });
+      expect(res.message).toContain('No se pudo conectar: Unknown protocol error');
+    });
   });
 });
