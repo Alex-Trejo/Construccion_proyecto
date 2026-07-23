@@ -2,6 +2,8 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { XmlValidatorAdapter } from './xml-validator.adapter';
 import * as fs from 'fs/promises';
 
+jest.mock('fs/promises');
+
 describe('XmlValidatorAdapter', () => {
   let adapter: XmlValidatorAdapter;
 

@@ -73,7 +73,7 @@ describe('SriSoapApiAdapter', () => {
       jest.useFakeTimers();
       
       const promise = adapter.fetchAuthorization(claveAcceso);
-      jest.runAllTimers();
+      await jest.runAllTimersAsync();
       const result = await promise;
       
       expect(result.estado).toBe('AUTORIZADO');
@@ -88,10 +88,7 @@ describe('SriSoapApiAdapter', () => {
       jest.useFakeTimers();
       
       const promise = adapter.fetchAuthorization(claveAcceso);
-      for (let i = 0; i < 4; i++) {
-        await Promise.resolve(); // flush microtasks
-        jest.runAllTimers();
-      }
+      await jest.runAllTimersAsync();
       
       await expect(promise).rejects.toMatchObject({ code: 'ECONNRESET' });
       expect(mockAxiosInstance.post).toHaveBeenCalledTimes(4);

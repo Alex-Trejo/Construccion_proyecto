@@ -145,56 +145,67 @@ describe('DocumentTcpController', () => {
     });
   });
 
-  describe('validatePending', () => {
-    it('should call validatePending', async () => {
+  describe('Status and validations', () => {
+    it('should call validatePendingDocs', async () => {
       mockUseCases.validatePending.execute.mockResolvedValue({ validCount: 1 });
-      const result = await controller.validatePending(mockPayload({}));
+      const result = await controller.validatePendingDocs(mockPayload({}));
       expect(result).toEqual({ validCount: 1 });
       expect(mockUseCases.validatePending.execute).toHaveBeenCalledWith('user-id');
     });
-  });
 
-  describe('validateSpecific', () => {
-    it('should call validateDocument', async () => {
+    it('should call setStatus (revalidate)', async () => {
       mockUseCases.validateDocument.execute.mockResolvedValue(undefined);
-      await controller.validateSpecific(mockPayload({ id: 'doc1' }));
+      await controller.setStatus(mockPayload({ id: 'doc1', action: 'revalidate' }));
       expect(mockUseCases.validateDocument.execute).toHaveBeenCalledWith('doc1', 'user-id');
     });
-  });
 
-  describe('advanceStatus', () => {
-    it('should call advanceStatus', async () => {
+    it('should call setStatus (consolidate)', async () => {
       mockUseCases.advanceStatus.execute.mockResolvedValue({ id: 'doc1' });
-      const result = await controller.advanceStatus(mockPayload({ id: 'doc1', newStatus: DocumentStatus.COMPLETED }));
+      const result = await controller.setStatus(mockPayload({ id: 'doc1', action: 'consolidate' }));
       expect(result).toEqual({ id: 'doc1' });
-      expect(mockUseCases.advanceStatus.execute).toHaveBeenCalledWith('doc1', 'user-id', DocumentStatus.COMPLETED);
+      expect(mockUseCases.advanceStatus.execute).toHaveBeenCalledWith('doc1', 'user-id', DocumentStatus.CONSOLIDADO);
     });
   });
 
-  describe('listImportErrors', () => {
-    it('should call listImportErrors', async () => {
+  describe('Imports and Exports', () => {
+    it('should call importErrors', async () => {
       mockUseCases.listImportErrors.execute.mockResolvedValue([]);
-      const result = await controller.listImportErrors(mockPayload({}));
+      const result = await controller.importErrors(mockPayload({}));
       expect(result).toEqual([]);
       expect(mockUseCases.listImportErrors.execute).toHaveBeenCalledWith('user-id');
     });
-  });
 
-  describe('dashboardMetrics', () => {
-    it('should call dashboardMetrics', async () => {
+    it('should call retryImports', async () => {
+      mockUseCases.listImportErrors.execute.mockResolvedValue([{}]);
+      mockUseCases.importSriDocuments.retryFailed.mockResolvedValue(undefined);
+      const result = await controller.retryImports(mockPayload({}));
+      expect(result).toEqual({ retried: 1 });
+      expect(mockUseCases.listImportErrors.execute).toHaveBeenCalledWith('user-id');
+      expect(mockUseCases.importSriDocuments.retryFailed).toHaveBeenCalledWith('user-id');
+    });
+
+    it('should catch error in retryImports background task silently', async () => {
+      mockUseCases.listImportErrors.execute.mockResolvedValue([{}]);
+      mockUseCases.importSriDocuments.retryFailed.mockRejectedValue(new Error('bg err'));
+      const loggerErrorSpy = jest.spyOn((controller as any).logger, 'error');
+      await controller.retryImports(mockPayload({}));
+      // Need a tiny timeout to let the unhandled promise catch run
+      await new Promise(r => setTimeout(r, 0));
+      expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('bg err'));
+    });
+
+    it('should call metrics', async () => {
       mockUseCases.dashboardMetrics.execute.mockResolvedValue({ total: 10 });
-      const result = await controller.dashboardMetrics(mockPayload({ range: 'month' }));
+      const result = await controller.metrics(mockPayload({ range: 'month' }));
       expect(result).toEqual({ total: 10 });
       expect(mockUseCases.dashboardMetrics.execute).toHaveBeenCalledWith('user-id', { range: 'month' });
     });
-  });
 
-  describe('exportDocuments', () => {
-    it('should call exportDocuments', async () => {
-      mockUseCases.exportDocuments.execute.mockResolvedValue({ url: 'http://export' });
-      const result = await controller.exportDocuments(mockPayload({ format: 'csv', filters: {} }));
-      expect(result).toEqual({ url: 'http://export' });
-      expect(mockUseCases.exportDocuments.execute).toHaveBeenCalledWith('user-id', 'csv', {});
+    it('should call exportRows', async () => {
+      mockUseCases.exportDocuments.execute.mockResolvedValue([{ id: '1' }]);
+      const result = await controller.exportRows(mockPayload({ range: 'month' }));
+      expect(result).toEqual([{ id: '1' }]);
+      expect(mockUseCases.exportDocuments.execute).toHaveBeenCalledWith('user-id', { range: 'month' });
     });
   });
 });
